@@ -52,7 +52,7 @@ const seedPages: [string, string, string, number][] = [
 ];
 
 const seedSettings: Record<string, string> = {
-  site_title: "Diko Manager",
+  site_title: "KonferenzKompass",
   org_name: "",
   copyright: "",
   logo: "",

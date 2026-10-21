@@ -48,7 +48,7 @@ test("disallowed upload shows error and keeps settings", async () => {
   const res = await postMultipart(app, "/admin/settings", { ...baseSettings, site_title: "Neu", logo: new File(["x"], "x.exe") }, cookie);
   expect(res.status).toBe(400);
   expect(await res.text()).toContain("Dateityp nicht erlaubt");
-  expect(getSetting(db, "site_title")).toBe("Diko Manager");
+  expect(getSetting(db, "site_title")).toBe("KonferenzKompass");
 });
 
 test("path traversal and unknown names give 404", async () => {

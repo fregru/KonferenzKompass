@@ -1,5 +1,5 @@
 /*
- * Diko Manager – light, calm, mobile-first.
+ * KonferenzKompass – light, calm, mobile-first.
  * --primary/--secondary come from the settings.
  * Robustness rules: every grid column is minmax(0, …), flex/grid children may shrink (min-width: 0),
  * long words hyphenate or wrap, sizes are in rem so they follow the phone's font-size setting.

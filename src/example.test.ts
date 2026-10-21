@@ -64,14 +64,14 @@ test("example is held in Haus Altenberg: floor plans, drawn rooms, schedule entr
   expect(floors.length).toBe(4);
   for (const f of floors) expect(await Bun.file(join(process.env.UPLOAD_DIR!, f.image)).exists()).toBe(true);
   const room = (name: string) => db.query<{ n: number }, [string]>("SELECT COUNT(*) AS n FROM items JOIN rooms ON rooms.id = items.room_id WHERE rooms.name = ?").get(name)!.n;
-  expect(room("Goldener Saal")).toBeGreaterThan(3);
+  expect(room("Kapitelsaal")).toBeGreaterThan(3);
   expect(room("Christkönigskapelle")).toBe(1);
   const ags = db.query<{ title: string; room_id: number | null }, []>("SELECT title, room_id FROM items WHERE parent_id IS NOT NULL").all();
   expect(ags.length).toBe(4);
   expect(ags.every((a) => a.room_id !== null)).toBe(true);
   // free-text places stay text
   expect(db.query("SELECT room_id FROM items WHERE location = 'Speisesaal' LIMIT 1").get()).toEqual({ room_id: null });
-  expect(await (await app.request("/p/lageplan")).text()).toContain("Goldener Saal");
+  expect(await (await app.request("/p/lageplan")).text()).toContain("Kapitelsaal");
 });
 
 test("an existing venue is left alone: the example then has no rooms", async () => {
@@ -80,5 +80,5 @@ test("an existing venue is left alone: the example then has no rooms", async () 
   await seedExample(db, now);
   expect(db.query("SELECT COUNT(*) AS n FROM venues").get()).toEqual({ n: 1 });
   expect(activeEvent(db)!.venue_id).toBeNull();
-  expect(db.query("SELECT location FROM items WHERE title = 'Wahlen'").get()).toEqual({ location: "Goldener Saal" });
+  expect(db.query("SELECT location FROM items WHERE title = 'Wahlen'").get()).toEqual({ location: "Kapitelsaal" });
 });

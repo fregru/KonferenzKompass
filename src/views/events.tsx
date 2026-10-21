@@ -313,7 +313,7 @@ export function ItemForm({ db, user, event, action, values, error, itemId, back,
           {!parent && (
             <label class="menufield">
               Essen (nur bei Pause / Essen, ein Gericht pro Zeile)
-              <textarea name="menu" rows={3} placeholder={"z. B. Spaghetti Bolognese\nvegetarisch: Gemüselasagne"}>
+              <textarea name="menu" rows={3} placeholder={"z. B. Spaghetti mit Linsenbolognese\nDessert: Schokopudding"}>
                 {values.menu}
               </textarea>
               <span class="muted">Leer lassen, wenn nichts angezeigt werden soll.</span>
