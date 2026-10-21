@@ -26,6 +26,7 @@ KonferenzKompass ist eine leichte, selbst gehostete Webseite – entstanden für
 - **Eigenes Erscheinungsbild:** Titel, Logo, Favicon, Farben und Titelbild.
 - **Admin-Bereich:** mehrere Konten mit einzeln vergebbaren Rechten (z. B. nur Zeitplan).
 - **Veranstaltungen** archivieren, kopieren und löschen. Archivierte sind nicht mehr öffentlich.
+- **Sicherung:** Erscheinungsbild, Seiten, Benutzer, Orte und Veranstaltungen einzeln oder alle zusammen als eine Datei exportieren und wieder importieren – als Backup oder um Vorlagen in eine andere Installation zu übernehmen.
 
 Die Oberfläche ist auf Deutsch.
 
@@ -62,7 +63,7 @@ Beim ersten Start wird aus `ADMIN_USER` und `ADMIN_PASSWORD` (mind. 12 Zeichen) 
 
 Die App spricht nur HTTP; für HTTPS gehört ein Reverse-Proxy davor (z. B. Caddy oder nginx). Die Docker-Variante ist deshalb nur über `127.0.0.1:3000` erreichbar.
 
-**Daten und Backup:** Datenbank und hochgeladene Dateien liegen im Ordner `data/`. Backup = diesen Ordner kopieren.
+**Daten und Backup:** Datenbank und hochgeladene Dateien liegen im Ordner `data/`. Backup = diesen Ordner kopieren, oder im Admin-Bereich unter *Sicherung* alles als eine Datei herunterladen (siehe unten).
 
 **Update:** `git pull`, dann `docker compose up -d --build` bzw. `bun install --production` und Neustart.
 
@@ -72,6 +73,7 @@ Die App spricht nur HTTP; für HTTPS gehört ein Reverse-Proxy davor (z. B. Cadd
 - **Tageswechsel:** Ein Veranstaltungstag dauert bis 04:00 Uhr, damit z. B. die Party über Mitternacht weiterläuft.
 - **CSV-Import:** Am einfachsten erst exportieren und die Datei als Vorlage nutzen (Excel mit `;` funktioniert). Vor dem Import zeigt eine Vorschau alle Fehler. Der Import ersetzt den ganzen Zeitplan.
 - **Lageplan weitergeben:** Ein Ort lässt sich samt Grundrissen als JSON exportieren und in einer anderen Installation importieren.
+- **Sicherung:** Unter *Admin → Sicherung* wählst du aus, was in die Datei kommt (JSON, Bilder eingebettet). Beim Import zeigt eine Vorschau jeden Teil mit der geplanten Aktion: anlegen, ersetzen oder überspringen. Veranstaltungen und Orte werden über ihren Namen erkannt, Räume im Zeitplan bleiben zugeordnet. Der Live-Stand und Anmeldungen gehören nicht dazu; importierte Veranstaltungen kommen als Entwurf an. Jeder Teil braucht das passende Recht (Benutzer nur mit dem Recht *Benutzer*). Mit Benutzern enthält die Datei die Passwort-Hashes – sie gehört dann nicht in fremde Hände. Das eigene Konto wird beim Import nie überschrieben.
 
 ## Entwicklung
 

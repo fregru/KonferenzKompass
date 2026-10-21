@@ -1,14 +1,7 @@
 import type { ItemRow } from "./db";
 import { duration, fmt, isDate, toMinutes } from "./time";
 
-/** UTF-8 (with or without BOM), otherwise Windows-1252 as written by German Excel. */
-export function decode(bytes: Uint8Array): string {
-  try {
-    return new TextDecoder("utf-8", { fatal: true }).decode(bytes).replace(/^﻿/, "");
-  } catch {
-    return new TextDecoder("windows-1252").decode(bytes);
-  }
-}
+export { decode } from "./text";
 
 /** RFC 4180 records; the separator (; tab ,) is taken from the header line. Blank lines are skipped. */
 export function parseCsv(text: string): string[][] {

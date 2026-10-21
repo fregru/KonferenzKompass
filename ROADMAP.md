@@ -17,8 +17,6 @@ Ideen für spätere Versionen, nach Thema sortiert. Noch nichts davon ist umgese
 
 ## Betrieb
 
-- **Backup und Wiederherstellung** direkt im Admin-Bereich.
-- **Veranstaltung exportieren und importieren** (wie beim Lageplan), damit Vorlagen zwischen Installationen wandern können.
 - **Health-Check** für Docker; Container ohne Root-Rechte.
 
 ## Mitmachen

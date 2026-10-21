@@ -17,6 +17,7 @@ import {
   type AppEnv,
 } from "../auth";
 import { Dashboard, LoginPage, UserEdit, UsersPage } from "../views/admin";
+import { backupRoutes } from "./backup";
 import { contentRoutes } from "./content";
 import { eventRoutes } from "./events";
 import { liveRoutes } from "./live";
@@ -119,6 +120,7 @@ export function adminRoutes(db: Database) {
   r.route("/", settingsRoutes(db));
   r.route("/", contentRoutes(db));
   r.route("/", venueRoutes(db));
+  r.route("/", backupRoutes(db));
 
   return r;
 }

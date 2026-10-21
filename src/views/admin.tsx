@@ -3,7 +3,8 @@ import type { Child } from "hono/jsx";
 import { can, PERM_LABELS, PERMS, type Perm, type User } from "../auth";
 import { Layout } from "./layout";
 
-const sections: [Perm, string, string][] = [
+/** Area links; a list of perms means any one of them is enough. */
+const sections: [Perm | Perm[], string, string][] = [
   ["schedule", "/admin/schedule", "Zeitplan"],
   ["intro", "/admin/intro", "Einführung & FAQ"],
   ["events", "/admin/events", "Veranstaltungen"],
@@ -12,13 +13,16 @@ const sections: [Perm, string, string][] = [
   ["settings", "/admin/contacts", "Kontakte"],
   ["settings", "/admin/settings", "Einstellungen"],
   ["users", "/admin/users", "Benutzer"],
+  [["settings", "pages", "users", "map", "events"], "/admin/sicherung", "Sicherung"],
 ];
+
+const allowed = (user: User, p: Perm | Perm[]) => [p].flat().some((x) => can(user, x));
 
 function adminLinks(user: User) {
   return (
     <>
       <a href="/admin">Übersicht</a>
-      {sections.filter(([p]) => can(user, p)).map(([, href, label]) => (
+      {sections.filter(([p]) => allowed(user, p)).map(([, href, label]) => (
         <a href={href}>{label}</a>
       ))}
       <form method="post" action="/admin/logout">
@@ -54,7 +58,7 @@ export function AdminPage({ db, user, title, error, children }: { db: Database; 
 }
 
 export function Dashboard({ db, user }: { db: Database; user: User }) {
-  const visible = sections.filter(([p]) => can(user, p));
+  const visible = sections.filter(([p]) => allowed(user, p));
   return (
     <AdminPage db={db} user={user} title="Admin-Bereich">
       {visible.length === 0 ? (

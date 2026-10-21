@@ -411,6 +411,7 @@ export function EventDetail({ db, user, event, error }: { db: Database; user: Us
         <a class="btn secondary" href={`/admin/events/${event.id}/items`}>Zeitplan</a>
         <a class="btn secondary" href={`/admin/events/${event.id}/intro`}>Einführung & FAQ</a>
         <a class="btn secondary" href={`/admin/events/${event.id}/contacts`}>Kontakte</a>
+        <a class="btn secondary" href={`/admin/sicherung?event=${event.id}`}>Exportieren</a>
       </p>
       <form method="post" action={`/admin/events/${event.id}/venue`} class="card">
         <h2>Ort / Lageplan</h2>

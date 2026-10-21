@@ -84,6 +84,13 @@
     }
   });
 
+  // Sicherung: "Alle auswählen" / "Keine" for the export checkboxes.
+  document.addEventListener("click", (e) => {
+    const btn = e.target instanceof Element && e.target.closest("button[data-check]");
+    if (!btn) return;
+    for (const box of btn.form.querySelectorAll("input[type=checkbox]")) box.checked = btn.dataset.check === "1";
+  });
+
   // Schedule: drag entries by their handle, also between days. The arrows remain for keyboard and no-JS use.
   function initSortable() {
     if (!window.Sortable) return;

@@ -32,6 +32,20 @@ export async function saveData(data: Blob | Uint8Array, ext: string, maxBytes = 
   return name;
 }
 
+/** An upload as data URI for an export; "" when there is none or the file is gone. */
+export async function uploadDataUri(name: string): Promise<string> {
+  const file = NAME.test(name) && Bun.file(join(uploadDir(), name));
+  if (!file || !(await file.exists())) return "";
+  return `data:${TYPES[name.split(".").pop()!]};base64,${Buffer.from(await file.arrayBuffer()).toString("base64")}`;
+}
+
+/** The bytes and file extension of an image data URI, or null when it is not one of the allowed types. */
+export function fromDataUri(uri: string): { bytes: Uint8Array; ext: string } | null {
+  const m = /^data:([\w/+.-]+);base64,(.*)$/s.exec(uri);
+  const ext = m && Object.entries(TYPES).find(([, type]) => type === m[1])?.[0];
+  return ext ? { bytes: new Uint8Array(Buffer.from(m[2]!, "base64")), ext: ext === "jpeg" ? "jpg" : ext } : null;
+}
+
 /** Upload names the database still refers to. */
 function usedUploads(db: Database): Set<string> {
   const rows = db

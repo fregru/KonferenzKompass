@@ -183,6 +183,11 @@ form:has(select[name=kind] option[value=agenda]:checked) .menufield { display: n
 .changes li:last-child { border-bottom: 0; }
 .changelog .c-time { width: 4rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
+/* backup */
+.backup fieldset label { display: block; }
+.importplan .c-actions { width: 16rem; }
+.importplan .note { color: var(--warn); font-size: .9rem; }
+
 /* faq */
 .faq details { border-bottom: 1px solid var(--line); }
 .faq details:last-child { border-bottom: 0; }

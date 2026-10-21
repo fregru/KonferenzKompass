@@ -1,8 +1,9 @@
 import type { Database } from "bun:sqlite";
+import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { activeEvent, type Event, type ItemRow } from "./db";
 import { duration, toMinutes } from "./time";
-import { releaseUploads, saveData, uploadDir } from "./uploads";
+import { releaseUploads, saveData, uploadDataUri, uploadDir } from "./uploads";
 
 /** A house with floors; independent of events, each event picks one. */
 export type Venue = { id: number; name: string; sort: number };
@@ -156,15 +157,8 @@ export async function exportVenue(db: Database, venueId: number): Promise<VenueJ
   const venue = getVenue(db, venueId)!;
   const rooms = roomsOf(db, venueId);
   const floors = [];
-  for (const f of floorsOf(db, venueId)) {
-    let image = "";
-    const file = f.image && Bun.file(join(uploadDir(), f.image));
-    if (file && (await file.exists())) {
-      const type = IMAGE_TYPES[f.image.split(".").pop()!] ?? "application/octet-stream";
-      image = `data:${type};base64,${Buffer.from(await file.arrayBuffer()).toString("base64")}`;
-    }
-    floors.push({ name: f.name, image, rooms: rooms.filter((r) => r.floor_id === f.id).map(roomJson) });
-  }
+  for (const f of floorsOf(db, venueId))
+    floors.push({ name: f.name, image: await uploadDataUri(f.image), rooms: rooms.filter((r) => r.floor_id === f.id).map(roomJson) });
   return { format: VENUE_FORMAT, version: 1, name: venue.name, floors, rooms: rooms.filter((r) => r.floor_id === null).map(roomJson) };
 }
 
@@ -179,6 +173,11 @@ export function parseVenueJson(text: string): { data: VenueJson | null; errors: 
     return { data: null, errors: ["Die Datei ist kein gültiges JSON."] };
   }
   if (raw?.format !== VENUE_FORMAT || raw.version !== 1) return { data: null, errors: ["Die Datei ist kein Lageplan-Export (Version 1)."] };
+  return checkVenue(raw);
+}
+
+/** Validates one venue object of a Lageplan export (also used inside a Sicherung). */
+export function checkVenue(raw: any): { data: VenueJson | null; errors: string[] } {
   const errors: string[] = [];
   const names = new Set<string>();
   const rooms = (list: unknown, where: string): RoomJson[] =>
@@ -209,44 +208,60 @@ export function parseVenueJson(text: string): { data: VenueJson | null; errors: 
  * schedule entries keep their room; rooms missing from the file are deleted (entries keep their free-text place).
  */
 export async function importVenue(db: Database, data: VenueJson, targetId?: number): Promise<number> {
-  const images: string[] = [];
-  for (const f of data.floors) {
-    const m = /^data:([\w/+.-]+);base64,(.*)$/s.exec(f.image);
-    images.push(m ? await saveData(Buffer.from(m[2]!, "base64"), EXT_FOR[m[1]!]!, FLOOR_MAX_BYTES) : "");
-  }
+  const images = await saveVenueImages(data);
   // Replaced floor plans are deleted afterwards; a failed import drops the files it just saved.
   const oldImages = targetId === undefined ? [] : floorsOf(db, targetId).map((f) => f.image);
-  const write = db.transaction(() => {
-    let venueId = targetId;
-    if (venueId === undefined) venueId = Number(db.run("INSERT INTO venues (name, sort) VALUES (?, (SELECT COALESCE(MAX(sort), 0) + 1 FROM venues))", [data.name]).lastInsertRowid);
-    else db.run("UPDATE venues SET name = ? WHERE id = ?", [data.name, venueId]);
-    db.run("DELETE FROM floors WHERE venue_id = ?", [venueId]);
-    const existing = new Map(roomsOf(db, venueId).map((r) => [r.name.toLowerCase(), r.id]));
-    const keep = new Set<number>();
-    let sort = 0;
-    const put = (r: RoomJson, floorId: number | null) => {
-      const values = [floorId, r.name, r.short, r.description, r.kind, r.shape ? JSON.stringify(r.shape) : "", sort++];
-      const id = existing.get(r.name.toLowerCase());
-      if (id !== undefined) {
-        db.run("UPDATE rooms SET floor_id = ?, name = ?, short = ?, description = ?, kind = ?, shape = ?, sort = ? WHERE id = ?", [...values, id]);
-        keep.add(id);
-      } else db.run("INSERT INTO rooms (venue_id, floor_id, name, short, description, kind, shape, sort) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [venueId, ...values]);
-    };
-    data.floors.forEach((f, i) => {
-      const floorId = Number(db.run("INSERT INTO floors (venue_id, name, image, sort) VALUES (?, ?, ?, ?)", [venueId, f.name, images[i]!, i]).lastInsertRowid);
-      f.rooms.forEach((r) => put(r, floorId));
-    });
-    data.rooms.forEach((r) => put(r, null));
-    for (const id of existing.values()) if (!keep.has(id)) deleteRoom(db, id);
-    return venueId;
-  });
   let venueId: number;
   try {
-    venueId = write();
+    venueId = db.transaction(() => writeVenue(db, data, images, targetId))();
   } catch (e) {
     releaseUploads(db, images);
     throw e;
   }
   releaseUploads(db, oldImages);
+  return venueId;
+}
+
+/** Stores the floor plans of an export; returns their upload names in floor order ("" for a floor without one). */
+export async function saveVenueImages(data: VenueJson): Promise<string[]> {
+  const images: string[] = [];
+  try {
+    for (const f of data.floors) {
+      const m = /^data:([\w/+.-]+);base64,(.*)$/s.exec(f.image);
+      images.push(m ? await saveData(Buffer.from(m[2]!, "base64"), EXT_FOR[m[1]!]!, FLOOR_MAX_BYTES) : "");
+    }
+  } catch (e) {
+    for (const name of images) if (name) rmSync(join(uploadDir(), name), { force: true });
+    throw e;
+  }
+  return images;
+}
+
+/**
+ * Writes a venue with already saved floor plans (see saveVenueImages); run inside a transaction. The caller releases
+ * the replaced floor plans afterwards.
+ */
+export function writeVenue(db: Database, data: VenueJson, images: string[], targetId?: number): number {
+  let venueId = targetId;
+  if (venueId === undefined) venueId = Number(db.run("INSERT INTO venues (name, sort) VALUES (?, (SELECT COALESCE(MAX(sort), 0) + 1 FROM venues))", [data.name]).lastInsertRowid);
+  else db.run("UPDATE venues SET name = ? WHERE id = ?", [data.name, venueId]);
+  db.run("DELETE FROM floors WHERE venue_id = ?", [venueId]);
+  const existing = new Map(roomsOf(db, venueId).map((r) => [r.name.toLowerCase(), r.id]));
+  const keep = new Set<number>();
+  let sort = 0;
+  const put = (r: RoomJson, floorId: number | null) => {
+    const values = [floorId, r.name, r.short, r.description, r.kind, r.shape ? JSON.stringify(r.shape) : "", sort++];
+    const id = existing.get(r.name.toLowerCase());
+    if (id !== undefined) {
+      db.run("UPDATE rooms SET floor_id = ?, name = ?, short = ?, description = ?, kind = ?, shape = ?, sort = ? WHERE id = ?", [...values, id]);
+      keep.add(id);
+    } else db.run("INSERT INTO rooms (venue_id, floor_id, name, short, description, kind, shape, sort) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [venueId, ...values]);
+  };
+  data.floors.forEach((f, i) => {
+    const floorId = Number(db.run("INSERT INTO floors (venue_id, name, image, sort) VALUES (?, ?, ?, ?)", [venueId, f.name, images[i]!, i]).lastInsertRowid);
+    f.rooms.forEach((r) => put(r, floorId));
+  });
+  data.rooms.forEach((r) => put(r, null));
+  for (const id of existing.values()) if (!keep.has(id)) deleteRoom(db, id);
   return venueId;
 }

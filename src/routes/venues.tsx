@@ -5,6 +5,7 @@ import { bump } from "../db";
 import {
   deleteRoom, exportVenue, FLOOR_MAX_BYTES, floorsOf, getFloor, getRoom, getVenue, importVenue, parseShape, parseVenueJson, roomsOf,
 } from "../rooms";
+import { attachment, decode, slug } from "../text";
 import { releaseUploads, saveUpload, uploadedFile } from "../uploads";
 import { FloorDraw, RoomEdit, VenueEdit, VenuesPage } from "../views/venues";
 import { form, requirePerm } from "./util";
@@ -45,7 +46,7 @@ export function venueRoutes(db: Database) {
     if (file.size > 60 * 1024 * 1024) return fail("Die Datei ist zu groß.");
     const target = f.str("target") ? getVenue(db, f.str("target")) : null;
     if (f.str("target") && !target) return fail("Unbekannter Ort.");
-    const { data, errors } = parseVenueJson(await file.text());
+    const { data, errors } = parseVenueJson(decode(new Uint8Array(await file.arrayBuffer())));
     if (!data) return fail(`Import nicht möglich: ${errors.join(" ")}`);
     let id: number;
     try {
@@ -87,9 +88,9 @@ export function venueRoutes(db: Database) {
   r.get("/venues/:id/export.json", async (c) => {
     const venue = getVenue(db, c.req.param("id"));
     if (!venue) return c.notFound();
-    const slug = venue.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "ort";
-    c.header("Content-Disposition", `attachment; filename="lageplan-${slug}.json"`);
-    return c.json(await exportVenue(db, venue.id));
+    c.header("Content-Disposition", attachment(`lageplan-${slug(venue.name, "ort")}.json`, `lageplan-${venue.name}.json`));
+    c.header("Content-Type", "application/json; charset=utf-8");
+    return c.body(JSON.stringify(await exportVenue(db, venue.id)));
   });
 
   // --- floors ---
