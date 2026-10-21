@@ -1,0 +1,12 @@
+services:
+  diko:
+    build: .
+    ports:
+      - "127.0.0.1:3000:3000" # only reachable through the reverse proxy
+    volumes:
+      - ./data:/app/data
+    environment:
+      ADMIN_USER: ${ADMIN_USER:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      TRUST_PROXY: "1"
+    restart: unless-stopped

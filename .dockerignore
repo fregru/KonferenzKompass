@@ -1,0 +1,7 @@
+node_modules
+data
+.git
+.superpowers
+docs
+**/*.test.ts
+src/test-helpers.ts
