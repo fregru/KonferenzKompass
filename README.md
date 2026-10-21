@@ -17,7 +17,8 @@ KonferenzKompass ist eine leichte, selbst gehostete Webseite – entstanden für
 
 ## Funktionen
 
-- **Live-Zeitplan:** zeigt den aktuellen TOP, Verspätungen und die voraussichtlichen neuen Zeiten (die geplanten bleiben sichtbar). Gesteuert wird er vom Handy aus über die Live-Steuerung im Admin-Bereich; die Startseite aktualisiert sich selbst.
+- **Live-Zeitplan:** zeigt den aktuellen TOP, Verspätungen und die voraussichtlichen neuen Zeiten (die geplanten bleiben sichtbar). Gesteuert wird er vom Handy aus über die Live-Steuerung im Admin-Bereich; die Startseite aktualisiert sich selbst, die Live-Steuerung ebenso – so sehen mehrere Personen an mehreren Handys denselben Stand.
+- **Änderungsprotokoll:** wer wann einen Eintrag oder den Live-Stand geändert hat, kurz auf der Übersicht und vollständig je Veranstaltung.
 - **Zeitplanung:** feste und fließende Einträge, Unterpunkte (z. B. parallele Arbeitskreise), Essen bei Pausen, CSV-Import und -Export.
 - **Lageplan:** Grundrisse je Etage, eingezeichnete Räume, Raumsuche und Raumbelegung. Räume im Zeitplan verlinken direkt auf den Plan. Der Plan der Jugendbildungsstätte **Haus Altenberg** ist schon enthalten – wer dort tagt, muss nichts selbst einzeichnen.
 - **Seiten:** Unterlagen, Anträge, Wahlen (Links z. B. zu Nextcloud, Antragsgrün, OpenSlides), Hilfe & Service, Impressum und Datenschutz – alle umbenenn- und ausblendbar.

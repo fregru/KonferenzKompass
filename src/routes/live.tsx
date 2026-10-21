@@ -1,13 +1,15 @@
 import type { Database } from "bun:sqlite";
 import { Hono, type Context } from "hono";
 import type { AppEnv } from "../auth";
-import { activeEvent, bump, getSetting, itemsForEvent, setSetting, type Event, type ItemRow } from "../db";
-import { back, liveDay, liveInput, next, pauseUntil, setDone, startItem, startPause, stopNow, type PauseRequest } from "../live";
+import { changesFor, liveSummary, logChange, quoted } from "../changelog";
+import { activeEvent, bump, getItem, getSetting, itemsForEvent, setSetting, type Event, type ItemRow } from "../db";
+import { back, getLive, liveDay, liveInput, next, pauseUntil, setDone, startItem, startPause, stopNow, type PauseRequest } from "../live";
 import { computeDay, type Row } from "../schedule";
 import { dayLabel, duration, eventNow, fmt } from "../time";
 import { AdminPage } from "../views/admin";
+import { ChangeList } from "../views/events";
 import { itemLabel } from "../views/labels";
-import { Menu, PauseTimer } from "../views/public";
+import { liveEtag, Menu, PauseTimer } from "../views/public";
 import { form, requirePerm } from "./util";
 
 /** Name plus either a duration or an end time ("bis" wins when filled in). */
@@ -27,7 +29,8 @@ function PauseFields({ title, minutes }: { title: string; minutes: number }) {
   );
 }
 
-function LivePage({ db, c, event, error }: { db: Database; c: Context<AppEnv>; event: Event | null; error?: string }) {
+/** `etag` (only on a normal GET) lets admin.js poll the page and swap it in when something changed. */
+function LivePage({ db, c, event, error, etag }: { db: Database; c: Context<AppEnv>; event: Event | null; error?: string; etag?: string }) {
   const user = c.get("user");
   if (!event)
     return (
@@ -53,6 +56,7 @@ function LivePage({ db, c, event, error }: { db: Database; c: Context<AppEnv>; e
   const upcoming = rows.filter((r) => r.status === "upcoming" || r.status === "interrupted").slice(0, 3);
   const pauseOver = !!pause && now.minutes > pause.until;
   const showNext = getSetting(db, "show_next") !== "0";
+  const changes = changesFor(db, event.id, 8);
   /** Buttons for an entry: breaks get "Pause starten…", agenda items Erledigt / Jetzt starten. */
   const rowActions = (it: ItemRow, status: Row["status"]) =>
     it.kind === "break" ? (
@@ -93,7 +97,7 @@ function LivePage({ db, c, event, error }: { db: Database; c: Context<AppEnv>; e
       <p class="muted">
         {event.name} · {dayLabel(now.date)} · {fmt(now.minutes)} Uhr
       </p>
-      <div class="livegrid">
+      <div class="livegrid" data-etag={etag}>
         <div class="livecontrol">
           <section class={`card now${current?.overrun || pauseOver ? " over" : ""}`}>
             {pause ? (
@@ -162,6 +166,15 @@ function LivePage({ db, c, event, error }: { db: Database; c: Context<AppEnv>; e
               </ul>
             </section>
           )}
+          {changes.length > 0 && (
+            <section class="card">
+              <h2>Letzte Änderungen</h2>
+              <ChangeList db={db} changes={changes} back="/admin/live" />
+              <p>
+                <a href={`/admin/events/${event.id}/changes`}>Alle Änderungen</a>
+              </p>
+            </section>
+          )}
         </div>
         <div class="liveplan">
           <section class="card">
@@ -225,37 +238,61 @@ export function liveRoutes(db: Database) {
   r.use("/live", requirePerm(db, "schedule"));
   r.use("/live/*", requirePerm(db, "schedule"));
 
-  r.get("/live", (c) => c.html(<LivePage db={db} c={c} event={activeEvent(db)} />));
+  // Polled by admin.js: the ETag changes with every change (version) and every minute, like the start page.
+  r.get("/live", (c) => {
+    const etag = liveEtag(db, Date.now());
+    c.header("ETag", etag);
+    c.header("Cache-Control", "no-cache");
+    if (c.req.header("if-none-match") === etag) return c.body(null, 304);
+    return c.html(<LivePage db={db} c={c} event={activeEvent(db)} etag={etag} />);
+  });
 
-  const act = (fn: (c: Context<AppEnv>, eventId: number) => void | Promise<void>) => async (c: Context<AppEnv>) => {
+  /** Runs a live action and logs its text, followed by the resulting live state unless `withState` is false. */
+  const act = (fn: (c: Context<AppEnv>, eventId: number) => string | Promise<string>, withState = true) => async (c: Context<AppEnv>) => {
     const ev = activeEvent(db);
     if (!ev) return c.redirect("/admin/live");
     try {
-      await fn(c, ev.id);
+      const text = await fn(c, ev.id);
+      logChange(db, ev.id, c.get("user").username, withState ? `${text} → ${liveSummary(db, ev.id)}` : text);
     } catch (e) {
       return c.html(<LivePage db={db} c={c} event={ev} error={(e as Error).message} />, 400);
     }
     return c.redirect("/admin/live");
   };
 
-  r.post("/live/next", act((_, id) => next(db, id)));
+  r.post("/live/next", act((_, id) => (next(db, id), "Weiter")));
   r.post("/live/pause", act(async (c, id) => {
     const now = Date.now();
-    startPause(db, id, await pauseRequest(c, now), now);
+    const req = await pauseRequest(c, now);
+    const before = getLive(db, id);
+    startPause(db, id, req, now);
+    if (before?.pause_until != null) return "Pause geändert";
+    return req.mode === "close" && before?.current_item_id != null ? "TOP abgeschlossen, Pause gestartet" : "Pause gestartet";
   }));
-  r.post("/live/back", act((_, id) => back(db, id)));
-  r.post("/live/stop", act((_, id) => stopNow(db, id)));
+  r.post("/live/back", act((_, id) => (back(db, id), "Zurück (rückgängig gemacht)")));
+  r.post("/live/stop", act((_, id) => (stopNow(db, id), "Nichts läuft")));
   r.post("/live/show-next", act(async (c) => {
-    setSetting(db, "show_next", (await form(c)).str("show_next") === "0" ? "0" : "1");
+    const show = (await form(c)).str("show_next") !== "0";
+    setSetting(db, "show_next", show ? "1" : "0");
     bump(db);
-  }));
+    return `Nächster Programmpunkt auf der Startseite ${show ? "angezeigt" : "ausgeblendet"}`;
+  }, false));
   const eventItem = (c: Context<AppEnv>, eventId: number) => {
-    const itemId = Number(c.req.param("item"));
-    if (!db.query("SELECT 1 FROM items WHERE id = ? AND event_id = ?").get(itemId, eventId)) throw new Error("Eintrag nicht gefunden.");
-    return itemId;
+    const item = getItem(db, c.req.param("item")!);
+    if (item?.event_id !== eventId) throw new Error("Eintrag nicht gefunden.");
+    return item;
   };
-  r.post("/live/start/:item", act((c, id) => startItem(db, id, eventItem(c, id))));
-  r.post("/live/done/:item", act(async (c, id) => setDone(db, id, eventItem(c, id), (await form(c)).str("done") === "1")));
+  r.post("/live/start/:item", act((c, id) => {
+    const it = eventItem(c, id);
+    startItem(db, id, it.id);
+    return `Jetzt gestartet: ${quoted(it)}`;
+  }));
+  r.post("/live/done/:item", act(async (c, id) => {
+    const it = eventItem(c, id);
+    const done = (await form(c)).str("done") === "1";
+    setDone(db, id, it.id, done);
+    return `${done ? "Erledigt" : "Wieder geöffnet"}: ${quoted(it)}`;
+  }));
 
   return r;
 }

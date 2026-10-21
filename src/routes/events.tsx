@@ -2,6 +2,7 @@ import type { Database } from "bun:sqlite";
 import { Hono, type Context } from "hono";
 import type { AppEnv } from "../auth";
 import { releaseUploads } from "../uploads";
+import { changesFor, itemDiff, logChange, quoted, shortDayLabel } from "../changelog";
 import { activeEvent, bump, contactsFor, copyEvent, getEvent, getItem, itemsForEvent, subItemsFor, updateEvent, type Event, type ItemRow } from "../db";
 import { forgetItem } from "../live";
 import { decode, scheduleFromCsv, scheduleToCsv } from "../csv";
@@ -10,7 +11,7 @@ import { getRoom, getVenue, roomMap, roomStatus } from "../rooms";
 import { berlinNow, duration, fmt, isDate, toMinutes } from "../time";
 import { AdminPage } from "../views/admin";
 import { itemLabel } from "../views/labels";
-import { EventDetail, EventsPage, ImportPage, ItemForm, ItemsPage, OccupancyPage, type ItemFields } from "../views/events";
+import { ChangesPage, EventDetail, EventsPage, ImportPage, ItemForm, ItemsPage, OccupancyPage, type ItemFields } from "../views/events";
 import { form, requirePerm } from "./util";
 
 /** Loads an event for writing: 404 if missing, 403 if archived. */
@@ -223,11 +224,13 @@ export function eventRoutes(db: Database) {
     const double = f.str("double") ? null : doubleBooking(db, ev, values);
     if (double) return page({ error: double, double: true });
     db.transaction(() => {
-      const id = db.run(
+      const id = Number(db.run(
         `INSERT INTO items (event_id, date, sort, ${ITEM_COLS.map((k) => `"${k}"`).join(", ")}) VALUES (?, ?, 1e9, ${ITEM_COLS.map(() => "?").join(", ")})`,
         [ev.id, values.date, ...itemValues(values)],
-      ).lastInsertRowid;
-      moveItem(db, Number(id), values.date);
+      ).lastInsertRowid);
+      moveItem(db, id, values.date);
+      const it = getItem(db, id)!;
+      logChange(db, ev.id, c.get("user").username, `${quoted(it)} angelegt (${shortDayLabel(it.date)} ${it.start})`, id);
     })();
     bump(db);
     return c.redirect(`/admin/events/${ev.id}/items`);
@@ -268,6 +271,8 @@ export function eventRoutes(db: Database) {
       const index = values.date === item.date && !byTime ? idx : undefined;
       moveItem(db, item.id, values.date, index, index === 0 && !values.fixed ? values.start : undefined);
     })();
+    const diff = itemDiff(item, values, roomMap(db, ev.venue_id));
+    if (diff) logChange(db, ev.id, c.get("user").username, `${parent ? "Unterpunkt " : ""}${quoted(item)} geändert: ${diff}`, item.id);
     bump(db);
     return c.redirect(back ?? (parent ? `/admin/items/${parent.id}` : `/admin/events/${ev.id}/items`));
   });
@@ -280,6 +285,7 @@ export function eventRoutes(db: Database) {
     db.transaction(() => {
       forgetItem(db, item.id);
       deleteItem(db, item.id);
+      logChange(db, ev.id, c.get("user").username, `${item.parent_id === null ? "" : "Unterpunkt "}${quoted(item)} gelöscht (${shortDayLabel(item.date)} ${item.start})`);
     })();
     bump(db);
     return c.redirect(back ?? (item.parent_id === null ? `/admin/events/${ev.id}/items` : `/admin/items/${item.parent_id}`));
@@ -315,11 +321,12 @@ export function eventRoutes(db: Database) {
     if (error) return page({ error });
     const double = f.str("double") ? null : doubleBooking(db, ev, values);
     if (double) return page({ error: double, double: true });
-    db.run(
+    const id = db.run(
       `INSERT INTO items (event_id, date, parent_id, sort, ${ITEM_COLS.map((k) => `"${k}"`).join(", ")})
        VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort), -1) + 1 FROM items WHERE parent_id = ?), ${ITEM_COLS.map(() => "?").join(", ")})`,
       [ev.id, parent.date, parent.id, parent.id, ...itemValues(values)],
-    );
+    ).lastInsertRowid;
+    logChange(db, ev.id, c.get("user").username, `Unterpunkt ${quoted(values)} zu ${quoted(parent)} angelegt`, Number(id));
     bump(db);
     return c.redirect(`/admin/items/${parent.id}`);
   });
@@ -333,6 +340,13 @@ export function eventRoutes(db: Database) {
     const q = c.req.query("date");
     const date = q && isDate(q) ? q : (days.find((d) => d >= berlinNow().date) ?? days[0] ?? ev.start_date);
     return c.html(<OccupancyPage db={db} user={c.get("user")} event={ev} days={days} date={date} />);
+  });
+
+  // --- change log ---
+  r.use("/events/:id/changes", requirePerm(db, "schedule"));
+  r.get("/events/:id/changes", (c) => {
+    const ev = getEvent(db, c.req.param("id"));
+    return ev ? c.html(<ChangesPage db={db} user={c.get("user")} event={ev} changes={changesFor(db, ev.id, 500)} />) : c.notFound();
   });
 
   // --- CSV ---
@@ -365,6 +379,7 @@ export function eventRoutes(db: Database) {
       if (existing > 0 && !f.str("replace")) return page({ text, error: "Bitte bestätigen, dass der Zeitplan ersetzt wird." }, 400);
       try {
         importSchedule(db, ev.id, rows);
+        logChange(db, ev.id, c.get("user").username, `Zeitplan aus CSV importiert (${rows.length} Einträge)`);
       } catch (e) {
         return page({ text, error: (e as Error).message }, 400);
       }
@@ -391,6 +406,9 @@ export function eventRoutes(db: Database) {
     const index = dir === "up" ? idx - 1 : dir === "down" ? idx + 1 : Number(f.str("index"));
     if (!Number.isInteger(index)) return c.text("Ungültige Position.", 400);
     moveItem(db, item.id, date, index);
+    const moved = getItem(db, item.id)!;
+    if (moved.date !== item.date || moved.sort !== item.sort)
+      logChange(db, ev.id, c.get("user").username, `${quoted(item)} verschoben (${shortDayLabel(moved.date)}, ${moved.sort + 1}. Eintrag, jetzt ${moved.start})`, item.id);
     bump(db);
     return c.redirect(`/admin/events/${ev.id}/items`);
   });

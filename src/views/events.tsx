@@ -4,7 +4,8 @@ import { subItemsFor, type Event, type ItemRow } from "../db";
 import { CSV_COLUMNS, type ImportRow } from "../csv";
 import { clashes } from "../plan";
 import { bookings, floorsOf, mapPage, roomMap, roomsOf, roomStatus, venues, type Booking, type RoomStatus } from "../rooms";
-import { addDays, dayLabel, daysBetween, duration, fmt } from "../time";
+import { shortDayLabel, type Change } from "../changelog";
+import { addDays, berlinNow, dayLabel, daysBetween, duration, fmt } from "../time";
 import { AdminPage } from "./admin";
 import { Place, placeText, roomName } from "./map";
 import { itemLabel } from "./labels";
@@ -83,6 +84,7 @@ export function ItemsPage({ db, user, event, items }: { db: Database; user: User
           <a class="btn secondary" href={`/admin/events/${event.id}/items/export.csv`}>CSV exportieren</a>
         )}
         {event.venue_id !== null && <a class="btn secondary" href={`/admin/events/${event.id}/rooms`}>Raumbelegung</a>}
+        <a class="btn secondary" href={`/admin/events/${event.id}/changes`}>Änderungen</a>
       </div>
       {items.length === 0 && <p>Noch keine Einträge.</p>}
       {!readonly && items.length > 0 && (
@@ -615,6 +617,66 @@ export function OccupancyPage({ db, user, event, days, date }: { db: Database; u
         </>
       )}
       <p class="muted">Rot: Raum doppelt belegt. Bereiche gelten nie als belegt.</p>
+    </AdminPage>
+  );
+}
+
+/** Ids of the event's entries that still exist, so log lines only link to entries that can be opened. */
+const existingItems = (db: Database, eventId: number) =>
+  new Set(db.query<{ id: number }, [number]>("SELECT id FROM items WHERE event_id = ?").all(eventId).map((r) => r.id));
+
+/** Log lines: time (with day if not today), who, what; the text links to the entry while it exists. */
+export function ChangeList({ db, changes, back }: { db: Database; changes: Change[]; back?: string }) {
+  if (changes.length === 0) return null;
+  const items = existingItems(db, changes[0]!.event_id);
+  const today = berlinNow().date;
+  return (
+    <ul class="changes">
+      {changes.map((ch) => {
+        const t = berlinNow(new Date(ch.at));
+        return (
+          <li>
+            <span class="muted">
+              {t.date === today ? "" : `${shortDayLabel(t.date)} `}
+              {fmt(t.minutes)} · {ch.username}
+            </span>{" "}
+            {ch.item_id !== null && items.has(ch.item_id) ? (
+              <a href={`/admin/items/${ch.item_id}${back ? `?back=${back}` : ""}`}>{ch.text}</a>
+            ) : (
+              ch.text
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+export function ChangesPage({ db, user, event, changes }: { db: Database; user: User; event: Event; changes: Change[] }) {
+  const items = existingItems(db, event.id);
+  const days = [...new Set(changes.map((ch) => berlinNow(new Date(ch.at)).date))];
+  return (
+    <AdminPage db={db} user={user} title={`Änderungen: ${event.name}`}>
+      <p>
+        <a href={`/admin/events/${event.id}/items`}>← Zeitplan {event.name}</a>
+      </p>
+      {changes.length === 0 && <p>Noch keine Änderungen.</p>}
+      {days.map((d) => (
+        <section>
+          <h2>{dayLabel(d)}</h2>
+          <table class="changelog">
+            {changes
+              .filter((ch) => berlinNow(new Date(ch.at)).date === d)
+              .map((ch) => (
+                <tr>
+                  <td class="c-time">{fmt(berlinNow(new Date(ch.at)).minutes)}</td>
+                  <td>{ch.username}</td>
+                  <td>{ch.item_id !== null && items.has(ch.item_id) ? <a href={`/admin/items/${ch.item_id}`}>{ch.text}</a> : ch.text}</td>
+                </tr>
+              ))}
+          </table>
+        </section>
+      ))}
     </AdminPage>
   );
 }

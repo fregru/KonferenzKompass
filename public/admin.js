@@ -6,17 +6,8 @@
   const today = plan?.querySelector("#today");
   if (plan && today) plan.scrollTop += today.getBoundingClientRect().top - plan.getBoundingClientRect().top;
 
-  /** Posts `body` and swaps in the new admin content; rejects on network trouble. */
-  async function send(action, body) {
-    const res = await fetch(action, { method: "POST", body });
-    const target = new URL(res.url);
-    if (res.redirected && target.pathname !== location.pathname) return location.assign(res.url);
-    const doc = new DOMParser().parseFromString(await res.text(), "text/html");
-    const next = doc.querySelector(".admin");
-    if (!next) {
-      if (res.ok) return location.assign(res.url);
-      throw new Error(String(res.status)); // e.g. a rejected post: the caller falls back to a normal submit
-    }
+  /** Replaces the admin content with the one in `doc`, keeping the schedule list's scroll position. */
+  function swap(doc, next) {
     const scrollTop = document.querySelector(".planscroll")?.scrollTop;
     document.querySelector(".admin").replaceWith(next);
     const plan = document.querySelector(".planscroll");
@@ -24,6 +15,58 @@
     document.title = doc.title;
     initSortable();
   }
+
+  let posting = 0; // posts in flight
+  let posted = 0; // posts started so far; a poll that overlaps one is dropped
+
+  /** Posts `body` and swaps in the new admin content; rejects on network trouble. */
+  async function send(action, body) {
+    posting++;
+    posted++;
+    try {
+      const res = await fetch(action, { method: "POST", body });
+      const target = new URL(res.url);
+      if (res.redirected && target.pathname !== location.pathname) return location.assign(res.url);
+      const doc = new DOMParser().parseFromString(await res.text(), "text/html");
+      const next = doc.querySelector(".admin");
+      if (!next) {
+        if (res.ok) return location.assign(res.url);
+        throw new Error(String(res.status)); // e.g. a rejected post: the caller falls back to a normal submit
+      }
+      swap(doc, next);
+    } finally {
+      posting--;
+    }
+  }
+
+  // Übersicht: pages with data-etag reload themselves when someone else changed something (checked every 15 s), but
+  // not while this person is busy with a form or an open "Pause starten…".
+  let polling = false;
+  async function poll() {
+    const tagged = document.querySelector(".admin [data-etag]");
+    const admin = document.querySelector(".admin");
+    if (!tagged || polling || posting || document.hidden) return;
+    if (admin.querySelector("details[open]") || (admin.contains(document.activeElement) && document.activeElement.matches("input, select, textarea")))
+      return;
+    polling = true;
+    const before = posted;
+    try {
+      const res = await fetch(location.pathname, { headers: { "If-None-Match": tagged.dataset.etag }, cache: "no-store" });
+      document.querySelector(".admin").classList.remove("stale");
+      if (res.redirected) return clearInterval(timer); // signed out: stop asking
+      if (res.status !== 200 || posted !== before) return;
+      const doc = new DOMParser().parseFromString(await res.text(), "text/html");
+      const next = doc.querySelector(".admin");
+      const admin = document.querySelector(".admin");
+      if (next && posted === before && !admin.querySelector("details[open]")) swap(doc, next);
+    } catch {
+      document.querySelector(".admin").classList.add("stale");
+    } finally {
+      polling = false;
+    }
+  }
+  const timer = setInterval(poll, 15000);
+  document.addEventListener("visibilitychange", poll);
 
   document.addEventListener("submit", async (e) => {
     const form = e.target;

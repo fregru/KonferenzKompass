@@ -138,7 +138,7 @@ test("live screen splits into control and schedule columns", async () => {
   const { app, db } = setup(berlinNow().date);
   const cookie = await loginAs(app, db, ["schedule"]);
   const html = await (await app.request("/admin/live", { headers: { cookie } })).text();
-  expect(html.indexOf('<div class="livegrid">')).toBeGreaterThan(0);
+  expect(html.indexOf('<div class="livegrid"')).toBeGreaterThan(0);
   expect(html.indexOf('class="livecontrol"')).toBeLessThan(html.indexOf('class="liveplan"'));
   // upcoming items sit at the bottom of the left column, below the next-item switch
   expect(html.indexOf("Als Nächstes")).toBeGreaterThan(html.indexOf("/admin/live/show-next"));

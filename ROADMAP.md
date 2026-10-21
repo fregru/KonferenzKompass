@@ -15,11 +15,6 @@ Ideen für spätere Versionen, nach Thema sortiert. Noch nichts davon ist umgese
 - **Raumanzeige** für ein Tablet an der Tür: „jetzt / als Nächstes“ für einen Raum.
 - **Beamer-Ansicht:** große „Jetzt“-Karte mit Timer für die Leinwand im Saal.
 
-## Live-Steuerung
-
-- **Admin-Übersicht aktualisiert sich selbst**, damit mehrere Personen nicht mit veraltetem Stand arbeiten.
-- **Änderungsprotokoll:** wer hat welchen Eintrag oder Live-Stand geändert.
-
 ## Betrieb
 
 - **Backup und Wiederherstellung** direkt im Admin-Bereich.
