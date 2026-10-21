@@ -15,10 +15,6 @@ Ideen für spätere Versionen, nach Thema sortiert. Noch nichts davon ist umgese
 - **Raumanzeige** für ein Tablet an der Tür: „jetzt / als Nächstes“ für einen Raum.
 - **Beamer-Ansicht:** große „Jetzt“-Karte mit Timer für die Leinwand im Saal.
 
-## Betrieb
-
-- **Health-Check** für Docker; Container ohne Root-Rechte.
-
 ## Mitmachen
 
 Ideen, Fehlermeldungen und Pull Requests sind willkommen – am besten als [Issue](https://github.com/fregru/KonferenzKompass/issues).

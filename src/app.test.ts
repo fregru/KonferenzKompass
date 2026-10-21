@@ -33,3 +33,15 @@ test("phone menu is a native disclosure listing every page, current page marked"
   for (const href of ['href="/"', 'href="/p/unterlagen"', 'href="/p/antraege"', 'href="/p/wahlen"', 'href="/p/hilfe"']) expect(menu).toContain(href);
   expect(menu).toContain('href="/p/hilfe" aria-current="page"');
 });
+
+test("health check answers without login and reports a broken database", async () => {
+  const { app, db } = testApp();
+  const ok = await app.request("/health");
+  expect(ok.status).toBe(200);
+  expect(await ok.text()).toBe("ok");
+  expect(ok.headers.get("cache-control")).toBe("no-store");
+  db.close();
+  const broken = await app.request("/health");
+  expect(broken.status).toBe(503);
+  expect(await broken.text()).toBe("fehler");
+});

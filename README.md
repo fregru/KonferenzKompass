@@ -63,6 +63,8 @@ Beim ersten Start wird aus `ADMIN_USER` und `ADMIN_PASSWORD` (mind. 12 Zeichen) 
 
 Die App spricht nur HTTP; für HTTPS gehört ein Reverse-Proxy davor (z. B. Caddy oder nginx). Die Docker-Variante ist deshalb nur über `127.0.0.1:3000` erreichbar.
 
+Der Container läuft ohne Root-Rechte als Benutzer `bun` (UID 1000); der Ordner `data/` muss ihm gehören. `/health` antwortet mit `ok`, solange App und Datenbank laufen – Docker nutzt das für seinen Health-Check, Reverse-Proxy oder Monitoring können es ebenso.
+
 **Daten und Backup:** Datenbank und hochgeladene Dateien liegen im Ordner `data/`. Backup = diesen Ordner kopieren, oder im Admin-Bereich unter *Sicherung* alles als eine Datei herunterladen (siehe unten).
 
 **Update:** `git pull`, dann `docker compose up -d --build` bzw. `bun install --production` und Neustart.
