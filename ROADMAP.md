@@ -25,7 +25,6 @@ Ideen für spätere Versionen, nach Thema sortiert. Noch nichts davon ist umgese
 - **Kontrast-Prüfung** in den Einstellungen: Hinweis, wenn weiße Schrift auf der gewählten Primärfarbe schlecht lesbar ist.
 - **Tests unabhängig von der Uhrzeit:** die Admin-Routen nutzen `Date.now()` statt der austauschbaren Uhr der öffentlichen Seiten; Live-Tests können deshalb zwischen 00:00 und 04:00 fehlschlagen (der Veranstaltungstag dauert bis 04:00).
 - **CI auf GitHub:** bei jedem Push und Pull Request Typprüfung, Tests und Docker-Build.
-- **Darkmode**: Funktion, dass User nach belieben in einen Darkmode wechseln können, der sich an die Systemeinstellungen anpasst. Dies kann aber auch mit einem Button gewechselt werden.
 
 ## Mitmachen
 

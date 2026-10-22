@@ -16,7 +16,8 @@ export const BACKUP_FORMAT = "konferenzkompass-sicherung";
 
 /** Appearance settings; internal counters and flags (version, example_seeded, perm_*) stay out. */
 const SETTING_KEYS = [
-  "site_title", "org_name", "copyright", "logo", "favicon", "color_primary", "color_secondary", "hero_image", "hero_position",
+  "site_title", "org_name", "copyright", "logo", "favicon", "color_primary", "color_secondary", "color_primary_dark", "color_secondary_dark",
+  "hero_image", "hero_position",
   "show_intro", "show_schedule", "show_next", "show_contact",
 ] as const;
 const IMAGE_KEYS = ["logo", "favicon", "hero_image"];
@@ -172,7 +173,9 @@ export function parseBackup(text: string): { data: Backup | null; errors: string
       if (IMAGE_KEYS.includes(key)) s[key] = fileRef(v);
       else if (key.startsWith("show_")) s[key] = v === "0" || v === 0 || v === false ? "0" : "1";
       else if (key.startsWith("color_")) {
-        if (!COLOR.test(str(v))) errors.push(`Erscheinungsbild: ungültige Farbe „${str(v, 20)}“.`);
+        // darkmode colours may be "" (derived from the light colour)
+        if (key.endsWith("_dark") && str(v) === "") s[key] = "";
+        else if (!COLOR.test(str(v))) errors.push(`Erscheinungsbild: ungültige Farbe „${str(v, 20)}“.`);
         else s[key] = str(v).toLowerCase();
       } else s[key] = str(v, 200);
     }

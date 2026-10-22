@@ -62,7 +62,7 @@ test("colors and texts are saved; invalid color rejected", async () => {
   const cookie = await loginAs(app, db, ["settings"]);
   await postMultipart(app, "/admin/settings", { ...baseSettings, color_primary: "#123456", show_intro: "1" }, cookie);
   const html = await (await app.request("/")).text();
-  expect(html).toContain("--primary:#123456");
+  expect(html).toContain("--primary-l:#123456");
   expect(getSetting(db, "show_schedule")).toBe("0");
   const bad = await postMultipart(app, "/admin/settings", { ...baseSettings, color_primary: "red;}</style>" }, cookie);
   expect(bad.status).toBe(400);
@@ -107,4 +107,28 @@ test("pruneUploads deletes files nothing refers to and keeps the rest", async ()
   pruneUploads(db);
   expect(existsSync(join(uploadDir(), used))).toBe(true);
   expect(existsSync(join(uploadDir(), orphan))).toBe(false);
+});
+
+test("darkmode colours: derived from the light colours unless own ones are set", async () => {
+  const { app, db } = testApp();
+  const cookie = await loginAs(app, db, ["settings"]);
+  await postMultipart(app, "/admin/settings", { ...baseSettings, color_primary: "#000000", color_primary_dark: "#123456" }, cookie);
+  expect(getSetting(db, "color_primary_dark")).toBe("");
+  let html = await (await app.request("/")).text();
+  expect(html).toContain("--primary-d:#737373");
+  expect(html).toContain('<fieldset class="themeswitch" hidden=""><legend>Design</legend>');
+  expect(html).toContain('<script src="/static/theme.js"></script>');
+
+  const own = { ...baseSettings, own_dark: "1", color_primary_dark: "#ABCDEF", color_secondary_dark: "#fedcba" };
+  await postMultipart(app, "/admin/settings", own, cookie);
+  expect(getSetting(db, "color_primary_dark")).toBe("#abcdef");
+  html = await (await app.request("/")).text();
+  expect(html).toContain("--primary-d:#abcdef;--secondary-d:#fedcba");
+
+  const bad = await postMultipart(app, "/admin/settings", { ...own, color_secondary_dark: "x;}" }, cookie);
+  expect(bad.status).toBe(400);
+  expect(getSetting(db, "color_secondary_dark")).toBe("#fedcba");
+
+  await postMultipart(app, "/admin/settings", baseSettings, cookie);
+  expect(getSetting(db, "color_primary_dark")).toBe("");
 });

@@ -216,3 +216,12 @@ test("a failing import changes nothing and leaves no new files behind", async ()
   expect(count(s.db, "SELECT 1 FROM venues")).toBe(1);
   expect(readdirSync(uploadDir()).length).toBe(files);
 });
+
+test("darkmode colours: own value or empty (derived) are kept, anything else is an error", () => {
+  const backup = (settings: Record<string, string>) =>
+    JSON.stringify({ format: "konferenzkompass-sicherung", version: 1, files: {}, settings: { site_title: "Diko", ...settings } });
+  const { data } = parseBackup(backup({ color_primary_dark: "#AABBCC", color_secondary_dark: "" }));
+  expect(data?.settings).toMatchObject({ color_primary_dark: "#aabbcc", color_secondary_dark: "" });
+  expect(parseBackup(backup({ color_primary_dark: "red" })).errors[0]).toContain("ungültige Farbe");
+  expect(parseBackup(backup({ color_primary: "" })).errors[0]).toContain("ungültige Farbe");
+});

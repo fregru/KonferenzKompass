@@ -2,7 +2,16 @@ import type { Database } from "bun:sqlite";
 import type { Child } from "hono/jsx";
 import { raw } from "hono/html";
 import type { User } from "../auth";
+import { darkColor } from "../color";
 import { activeEvent, getPages, getSettings, linksFor, type Page, type PageLink } from "../db";
+import { Icon } from "./icons";
+
+/** Darkmode switch in the footer; "auto" follows the device. */
+const THEMES = [
+  ["light", "Hell", "sun"],
+  ["auto", "Automatisch", null],
+  ["dark", "Dunkel", "moon"],
+] as const;
 
 /** A "direct" link page with exactly one link jumps straight to the external site. */
 export function pageTarget(p: Page, links: PageLink[]): { href: string; external: boolean } {
@@ -57,9 +66,13 @@ export function Layout({ db, title, active, hero, user, children }: { db: Databa
           <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
           <title>{title ? `${title} – ${s.site_title}` : s.site_title}</title>
           {s.favicon && <link rel="icon" href={`/uploads/${s.favicon}`} />}
+          <script src="/static/theme.js"></script>
           <link rel="stylesheet" href="/static/style.css" />
           <script src="/static/site.js" defer></script>
-          <style>{`:root{--primary:${s.color_primary};--secondary:${s.color_secondary}}`}</style>
+          <style>
+            {`:root{--primary-l:${s.color_primary};--secondary-l:${s.color_secondary};` +
+              `--primary-d:${darkColor(s.color_primary!, s.color_primary_dark)};--secondary-d:${darkColor(s.color_secondary!, s.color_secondary_dark)}}`}
+          </style>
         </head>
         <body>
           <header>
@@ -97,6 +110,17 @@ export function Layout({ db, title, active, hero, user, children }: { db: Databa
                   <a href={`/p/${p.slug}`}>{p.title}</a>
                 ))}
               </div>
+              {/* shown and wired up by theme.js */}
+              <fieldset class="themeswitch" hidden>
+                <legend>Design</legend>
+                {THEMES.map(([value, label, icon]) => (
+                  <label>
+                    <input type="radio" name="theme" value={value} />
+                    {icon && <Icon name={icon} />}
+                    {label}
+                  </label>
+                ))}
+              </fieldset>
               <span>
                 © {new Date().getFullYear()} {s.copyright || s.org_name}
               </span>

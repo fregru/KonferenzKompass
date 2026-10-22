@@ -24,6 +24,7 @@ KonferenzKompass ist eine leichte, selbst gehostete Webseite – entstanden für
 - **Seiten:** Unterlagen, Anträge, Wahlen (Links z. B. zu Nextcloud, Antragsgrün, OpenSlides), Hilfe & Service, Impressum und Datenschutz – alle umbenenn- und ausblendbar.
 - **Startseite:** Einführungstext, FAQ und Ansprechperson mit Foto.
 - **Eigenes Erscheinungsbild:** Titel, Logo, Favicon, Farben und Titelbild.
+- **Darkmode:** richtet sich nach der Einstellung des Geräts und lässt sich unten auf jeder Seite auf Hell, Automatisch oder Dunkel stellen. Der Hintergrund ist echtes Schwarz (spart Akku auf OLED-Displays). Die Farben werden dafür automatisch aufgehellt, unter *Einstellungen* lassen sich auch eigene festlegen.
 - **Admin-Bereich:** mehrere Konten mit einzeln vergebbaren Rechten (z. B. nur Zeitplan).
 - **Veranstaltungen** archivieren, kopieren und löschen. Archivierte sind nicht mehr öffentlich.
 - **Sicherung:** Erscheinungsbild, Seiten, Benutzer, Orte und Veranstaltungen einzeln oder alle zusammen als eine Datei exportieren und wieder importieren – als Backup oder um Vorlagen in eine andere Installation zu übernehmen.

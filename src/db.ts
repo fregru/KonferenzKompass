@@ -62,6 +62,8 @@ const seedSettings: Record<string, string> = {
   favicon: "",
   color_primary: "#00b6be", // kjg-koeln.de
   color_secondary: "#006d84",
+  color_primary_dark: "", // "" = derived from color_primary
+  color_secondary_dark: "",
   hero_image: "",
   hero_position: "center",
   show_intro: "1",
