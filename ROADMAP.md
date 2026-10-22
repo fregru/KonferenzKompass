@@ -18,6 +18,15 @@ Ideen für spätere Versionen, nach Thema sortiert. Noch nichts davon ist umgese
 - **Raumanzeige** für ein Tablet an der Tür: „jetzt / als Nächstes“ für einen Raum.
 - **Beamer-Ansicht:** große „Jetzt“-Karte mit Timer für die Leinwand im Saal.
 
+## Technik
+
+- **Automatische Sicherung:** einmal pro Nacht eine Sicherung (wie unter *Admin → Sicherung*) nach `data/backups/`, die letzten 7 bleiben. Schützt auch vor versehentlich gelöschten Veranstaltungen.
+- **Sicherheits-Header für alle Seiten:** strenge `Content-Security-Policy` (alle Skripte sind eigene Dateien), Schutz vor Einbetten in fremde Seiten (`frame-ancestors`) und `Referrer-Policy`. Bisher haben nur hochgeladene Dateien eine CSP.
+- **Kontrast-Prüfung** in den Einstellungen: Hinweis, wenn weiße Schrift auf der gewählten Primärfarbe schlecht lesbar ist.
+- **Tests unabhängig von der Uhrzeit:** die Admin-Routen nutzen `Date.now()` statt der austauschbaren Uhr der öffentlichen Seiten; Live-Tests können deshalb zwischen 00:00 und 04:00 fehlschlagen (der Veranstaltungstag dauert bis 04:00).
+- **CI auf GitHub:** bei jedem Push und Pull Request Typprüfung, Tests und Docker-Build.
+- **Darkmode**: Funktion, dass User nach belieben in einen Darkmode wechseln können, der sich an die Systemeinstellungen anpasst. Dies kann aber auch mit einem Button gewechselt werden.
+
 ## Mitmachen
 
 Ideen, Fehlermeldungen und Pull Requests sind willkommen – am besten als [Issue](https://github.com/fregru/KonferenzKompass/issues).
