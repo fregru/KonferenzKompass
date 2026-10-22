@@ -65,6 +65,7 @@ const seedSettings: Record<string, string> = {
   color_primary_dark: "", // "" = derived from color_primary
   color_secondary_dark: "",
   hero_image: "",
+  app_icon: "", // "" = generated from title and primary colour (/app-icon.svg)
   hero_position: "center",
   show_intro: "1",
   show_schedule: "1",

@@ -77,7 +77,8 @@ test("upload shows a preview, confirm imports and recalculates; export round-tri
 
   const res = await app.request(`/admin/events/${ev}/items/export.csv`, { headers: { cookie } });
   expect(res.headers.get("content-type")).toContain("text/csv");
-  const exported = await res.text();
+  // the raw bytes: res.text() drops a leading BOM, as the Fetch spec says
+  const exported = new TextDecoder("utf-8", { ignoreBOM: true }).decode(await res.arrayBuffer());
   expect(exported.startsWith("﻿Datum;Beginn;Dauer;Titel;Art;TOP;Raum;Ort;Zuständig;Beschreibung;Unterpunkt")).toBe(true);
   const again = scheduleFromCsv(exported.replace(/^﻿/, ""));
   expect(again.errors).toEqual([]);

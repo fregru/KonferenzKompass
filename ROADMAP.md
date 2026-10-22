@@ -10,8 +10,7 @@ Ideen für spätere Versionen, nach Thema sortiert. Noch nichts davon ist umgese
 
 ## Vor Ort und bei schwachem WLAN
 
-- **App zum Installieren (PWA)**, in Stufen:
-  - *Stufe 1:* Manifest aus den Einstellungen (Titel, Logo, Farben) für ein Icon auf dem Startbildschirm, dazu ein kleiner Service Worker. Zeitplan, Seiten und Live-Daten kommen immer zuerst aus dem Netz; ohne Netz zeigt die App den letzten Stand mit Hinweis „Stand hh:mm (offline)“. CSS, JS und Grundrisse werden mit Versions-Parameter lange zwischengespeichert, Antworten in der App selbst komprimiert.
+- **App zum Installieren (PWA)**, weitere Stufen (Stufe 1 – installierbar, letzter Stand offline – ist umgesetzt):
   - *Admin-Bereich:* mit installierbar (auf Android als Verknüpfung direkt zur Live-Steuerung), aber nur online: nichts aus dem Cache, keine zwischengespeicherten Klicks – ohne Netz erscheint „Offline – Änderungen erst wieder mit Netz möglich“. Auf dem iPhone meldet man sich in der installierten App einmal neu an.
   - *Stufe 2 (optional):* Push-Mitteilungen für Ankündigungen. Zuverlässig auf Android und am Rechner, auf dem iPhone nur bei installierter App (ab iOS 16.4) – erreicht dort also nur wenige.
   - Zu beachten: ein veralteter „Jetzt“-Stand darf nie wie ein aktueller aussehen; Updates müssen den alten Cache sicher ablösen; Safari löscht den Cache nach etwa 7 Tagen ohne Nutzung.

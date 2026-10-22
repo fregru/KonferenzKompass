@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { raw } from "hono/html";
+import { assetUrl } from "../assets";
 import type { User } from "../auth";
 import type { Event } from "../db";
 import { floorsOf, roomsOf, venues, type Floor, type Room, type Venue } from "../rooms";
@@ -335,7 +336,7 @@ export function FloorDraw({ db, user, floor, selected }: { db: Database; user: U
       <script type="application/json" id="rooms-data">
         {raw(JSON.stringify(data).replace(/</g, "\\u003c"))}
       </script>
-      <script src="/static/map-editor.js" defer></script>
+      <script src={assetUrl("map-editor.js")} defer></script>
     </AdminPage>
   );
 }

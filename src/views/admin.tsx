@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type { Child } from "hono/jsx";
+import { assetUrl } from "../assets";
 import { can, PERM_LABELS, PERMS, type Perm, type User } from "../auth";
 import { Layout } from "./layout";
 
@@ -52,7 +53,7 @@ export function AdminPage({ db, user, title, error, children }: { db: Database; 
         {error && <p class="error">{error}</p>}
         {children}
       </div>
-      <script src="/static/admin.js" defer></script>
+      <script src={assetUrl("admin.js")} defer></script>
     </Layout>
   );
 }

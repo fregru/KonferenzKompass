@@ -91,6 +91,14 @@ header { position: sticky; top: 0; z-index: 20; background: var(--card); border-
 .menu-list a { display: flex; align-items: center; min-height: 3rem; padding: 0 .75rem; border-radius: 6px; color: var(--fg); text-decoration: none; font-size: 1.05rem; }
 .menu-list a[aria-current] { background: var(--tint); color: var(--primary); font-weight: 600; }
 
+/* offline notice (site.js), part of the sticky header; "back" = briefly after the network returned */
+.offlinebar { border-top: 1px solid var(--line); background: color-mix(in srgb, var(--warn) 12%, var(--card)); }
+.offlinebar p { max-width: var(--width); margin: 0 auto; padding: .55rem var(--pad-x); font-size: .9rem; font-weight: 600; color: var(--warn); }
+.offlinebar p::before { content: "⚠\FE0E  "; }
+.offlinebar.back { background: var(--tint); }
+.offlinebar.back p { color: var(--primary); }
+.offlinebar.back p::before { content: none; }
+
 /* wide screens: inline tabs instead of the menu button */
 .tabs { display: none; }
 @media (min-width: 48rem) {
@@ -166,6 +174,13 @@ footer a { display: inline-block; padding: .4rem 0; color: inherit; margin-right
 .next { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .25rem 1rem; margin-top: .8rem; padding-top: .7rem; border-top: 1px solid var(--line); font-size: .95rem; color: var(--muted); }
 .next > * { min-width: 0; }
 .next b { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--fg); }
+/* offline (html.offline from site.js): the card shows its age instead of looking current; the timer is hidden
+   because it would keep counting from an old state */
+.offline .now { border-left-color: var(--muted); }
+.offline .now :is(h3, .meta, .next, .next b, .status) { color: var(--muted); }
+.offline .now .eyebrow { font-size: 0; }
+.offline .now .eyebrow::before { content: "Offline · Stand " var(--stand); font-size: .78rem; color: var(--warn); }
+.offline .now .timer { display: none; }
 
 /* schedule */
 .day { container-type: inline-size; }

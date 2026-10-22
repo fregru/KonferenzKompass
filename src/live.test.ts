@@ -126,7 +126,7 @@ test("live screen offers Erledigt / Wieder öffnen per entry", async () => {
   expect(html).toContain(`action="/admin/live/done/${ids.A}"`);
   expect(html).toContain("Erledigt");
   expect(html.indexOf(`/admin/live/done/${ids.B}`)).toBeLessThan(html.indexOf(`/admin/live/start/${ids.B}`)); // Erledigt left of Jetzt starten
-  expect(html).toContain('<script src="/static/admin.js" defer');
+  expect(html).toMatch(/<script src="\/static\/admin\.js\?v=\w+" defer/);
   await post(app, `/admin/live/done/${ids.A}`, { done: "1" }, cookie);
   expect(done(db, ids.A!)).toBe(1);
   expect(await (await app.request("/admin/live", { headers: { cookie } })).text()).toContain("TOP öffnen");

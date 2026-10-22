@@ -2,6 +2,7 @@ import type { Database } from "bun:sqlite";
 import { Hono } from "hono";
 import type { AppEnv, User } from "../auth";
 import { darkColor } from "../color";
+import { pngSize } from "../pwa";
 import { bump, getSettings, setSetting } from "../db";
 import { releaseUploads, saveUpload, uploadedFile } from "../uploads";
 import { AdminPage } from "../views/admin";
@@ -11,8 +12,8 @@ import { form, requirePerm } from "./util";
 const COLOR = /^#[0-9a-f]{6}$/i;
 const COLORS = ["color_primary", "color_secondary"];
 const DARK_COLORS = ["color_primary_dark", "color_secondary_dark"];
-const IMAGES = ["logo", "favicon", "hero_image"] as const;
-const IMAGE_LABELS = { logo: "Logo", favicon: "Favicon", hero_image: "Titelbild (Startseite)" };
+const IMAGES = ["logo", "favicon", "hero_image", "app_icon"] as const;
+const IMAGE_LABELS = { logo: "Logo", favicon: "Favicon", hero_image: "Titelbild (Startseite)", app_icon: "App-Icon (Startbildschirm)" };
 const TEXTS = ["site_title", "org_name", "copyright"] as const;
 const BLOCKS = [
   ["show_intro", "Einführung & FAQ"],
@@ -72,6 +73,12 @@ function SettingsPage({ db, user, error }: { db: Database; user: User; error?: s
             {key === "hero_image" && (
               <p class="muted">Querformat, ca. 1600 px breit, JPG oder WebP, möglichst unter 300 KB. Ohne Bild erscheint eine Fläche in der Primärfarbe.</p>
             )}
+            {key === "app_icon" && (
+              <p class="muted">
+                Für das Symbol auf dem Startbildschirm, wenn die Seite als App installiert wird. Quadratisches PNG, mindestens 512 × 512 px. Ohne Bild
+                wird das Favicon verwendet (auf weißem Quadrat), ohne Favicon der erste Buchstabe des Seitentitels auf der Primärfarbe.
+              </p>
+            )}
             {s[key] && (
               <p>
                 <img src={`/uploads/${s[key]}`} alt="" class="thumb" />
@@ -80,7 +87,7 @@ function SettingsPage({ db, user, error }: { db: Database; user: User; error?: s
                 </label>
               </p>
             )}
-            <input type="file" name={key} accept=".png,.jpg,.jpeg,.webp,.ico,.svg" />
+            <input type="file" name={key} accept={key === "app_icon" ? ".png" : ".png,.jpg,.jpeg,.webp,.ico,.svg"} />
             {key === "hero_image" && (
               <label>
                 Sichtbarer Bildausschnitt
@@ -114,6 +121,11 @@ export function settingsRoutes(db: Database) {
     for (const key of ownDark ? [...COLORS, ...DARK_COLORS] : COLORS) if (!COLOR.test(f.str(key))) return fail("Ungültige Farbe.");
     const heroPosition = f.str("hero_position") || "center";
     if (!HERO_POSITIONS.some(([v]) => v === heroPosition)) return fail("Ungültiger Bildausschnitt.");
+    const icon = uploadedFile(f.body.app_icon);
+    if (icon) {
+      const size = pngSize(new Uint8Array(await icon.arrayBuffer()));
+      if (!size || size.width !== size.height || size.width < 512) return fail("App-Icon: bitte ein quadratisches PNG mit mindestens 512 × 512 px.");
+    }
     const files: Record<string, string> = {};
     try {
       for (const key of IMAGES) {

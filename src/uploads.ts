@@ -50,7 +50,7 @@ export function fromDataUri(uri: string): { bytes: Uint8Array; ext: string } | n
 function usedUploads(db: Database): Set<string> {
   const rows = db
     .query<{ name: string }, []>(
-      "SELECT value AS name FROM settings WHERE key IN ('logo', 'favicon', 'hero_image') UNION SELECT photo FROM contacts UNION SELECT image FROM floors",
+      "SELECT value AS name FROM settings WHERE key IN ('logo', 'favicon', 'hero_image', 'app_icon') UNION SELECT photo FROM contacts UNION SELECT image FROM floors",
     )
     .all();
   return new Set(rows.map((r) => r.name));

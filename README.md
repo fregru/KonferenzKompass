@@ -73,6 +73,7 @@ Der Container läuft ohne Root-Rechte als Benutzer `bun` (UID 1000); der Ordner 
 ## Gut zu wissen
 
 - **Feste und fließende Einträge:** Einträge mit fester Uhrzeit (z. B. Mittagessen) behalten ihren Beginn, alle anderen schließen direkt an den vorherigen an. Überschneidungen zeigt der Zeitplan rot an.
+- **Als App installieren:** Auf Android im Browser-Menü *App installieren*, auf dem iPhone *Teilen → Zum Home-Bildschirm*. Das Symbol kommt aus *Einstellungen → App-Icon* (sonst das Favicon, ohne Favicon der erste Buchstabe des Seitentitels). Ohne Netz zeigt die App die zuletzt geöffneten Seiten mit „Offline · Stand hh:mm“; der Admin-Bereich wird nie zwischengespeichert. Safari löscht den Zwischenspeicher nach etwa 7 Tagen ohne Nutzung. Installieren geht nur über HTTPS (oder `localhost`).
 - **Tageswechsel:** Ein Veranstaltungstag dauert bis 04:00 Uhr, damit z. B. die Party über Mitternacht weiterläuft.
 - **CSV-Import:** Am einfachsten erst exportieren und die Datei als Vorlage nutzen (Excel mit `;` funktioniert). Vor dem Import zeigt eine Vorschau alle Fehler. Der Import ersetzt den ganzen Zeitplan.
 - **Lageplan weitergeben:** Ein Ort lässt sich samt Grundrissen als JSON exportieren und in einer anderen Installation importieren.

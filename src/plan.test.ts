@@ -64,7 +64,7 @@ test("↑/↓ and drag-and-drop endpoint", async () => {
   expect((await post(app, `/admin/items/${ids.B}/move`, { date: "kaputt", index: "0" }, cookie)).status).toBe(400);
   const html = await (await app.request(`/admin/events/${ev}/items`, { headers: { cookie } })).text();
   expect(html).toContain(`data-sortable="${D}"`);
-  expect(html).toContain('<script src="/static/vendor/sortable.js" defer');
+  expect(html).toMatch(/<script src="\/static\/vendor\/sortable\.js\?v=\w+" defer/);
   expect((await app.request("/static/vendor/sortable.js")).status).toBe(200);
 });
 

@@ -15,9 +15,15 @@
         el.querySelectorAll("details").forEach((d, i) => { if (i < open.length) d.open = open[i]; });
         etag = res.headers.get("ETag");
       }
-      if (res.ok || res.status === 304) el.classList.remove("stale");
+      if (res.ok || res.status === 304) {
+        el.classList.remove("stale");
+        // the data on screen is current now: "Stand" for the offline notice (site.js)
+        document.documentElement.dataset.stand = String(Date.now());
+        document.dispatchEvent(new CustomEvent("kk:online", { detail: true }));
+      }
     } catch {
       el.classList.add("stale");
+      document.dispatchEvent(new CustomEvent("kk:online", { detail: false }));
     } finally {
       busy = false;
     }
@@ -29,6 +35,9 @@
     if (day && !day.open) day.open = true;
     target.scrollIntoView({ block: "center" });
   }
+  // right away too: a page the service worker served from its cache then shows "Offline · Stand hh:mm" at once
+  refresh();
   setInterval(refresh, 20000);
   document.addEventListener("visibilitychange", refresh);
+  addEventListener("online", refresh);
 })();

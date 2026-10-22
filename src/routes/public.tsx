@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
+import { assetUrl } from "../assets";
 import { sessionUser } from "../auth";
 import { Layout } from "../views/layout";
 import { getPage } from "../db";
@@ -26,7 +27,7 @@ export function publicRoutes(db: Database, clock: () => number) {
             <QuickLinks db={db} />
           </aside>
         </div>
-        <script src="/static/live.js" defer></script>
+        <script src={assetUrl("live.js")} defer></script>
       </Layout>,
     );
   });

@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import type { Child } from "hono/jsx";
 import { raw } from "hono/html";
+import { assetUrl } from "../assets";
 import type { User } from "../auth";
 import { darkColor } from "../color";
 import { activeEvent, getPages, getSettings, linksFor, type Page, type PageLink } from "../db";
@@ -60,15 +61,22 @@ export function Layout({ db, title, active, hero, user, children }: { db: Databa
   return (
     <>
       {raw("<!doctype html>")}
-      <html lang="de">
+      {/* data-stand: when this page was built; a copy from the service worker's cache shows its real age offline */}
+      <html lang="de" data-stand={String(Date.now())}>
         <head>
           <meta charset="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
           <title>{title ? `${title} – ${s.site_title}` : s.site_title}</title>
           {s.favicon && <link rel="icon" href={`/uploads/${s.favicon}`} />}
-          <script src="/static/theme.js"></script>
-          <link rel="stylesheet" href="/static/style.css" />
-          <script src="/static/site.js" defer></script>
+          <link rel="manifest" href="/manifest.webmanifest" />
+          {/* iOS takes the home screen icon from here (PNG only), not from the manifest; else a PNG tab icon */}
+          {(s.app_icon || s.favicon?.endsWith(".png")) && <link rel="apple-touch-icon" href={`/uploads/${s.app_icon || s.favicon}`} />}
+          {/* browser bar in the header's colour */}
+          <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+          <meta name="theme-color" content="#0e1215" media="(prefers-color-scheme: dark)" />
+          <script src={assetUrl("theme.js")}></script>
+          <link rel="stylesheet" href={assetUrl("style.css")} />
+          <script src={assetUrl("site.js")} defer></script>
           <style>
             {`:root{--primary-l:${s.color_primary};--secondary-l:${s.color_secondary};` +
               `--primary-d:${darkColor(s.color_primary!, s.color_primary_dark)};--secondary-d:${darkColor(s.color_secondary!, s.color_secondary_dark)}}`}
@@ -99,6 +107,10 @@ export function Layout({ db, title, active, hero, user, children }: { db: Databa
                   {links}
                 </nav>
               )}
+            </div>
+            {/* filled and shown by site.js; inside the sticky header so it stays in view */}
+            <div class="offlinebar" hidden>
+              <p role="status"></p>
             </div>
           </header>
           {hero}

@@ -117,7 +117,7 @@ test("darkmode colours: derived from the light colours unless own ones are set",
   let html = await (await app.request("/")).text();
   expect(html).toContain("--primary-d:#737373");
   expect(html).toContain('<fieldset class="themeswitch" hidden=""><legend>Design</legend>');
-  expect(html).toContain('<script src="/static/theme.js"></script>');
+  expect(html).toMatch(/<script src="\/static\/theme\.js\?v=\w+"><\/script>/);
 
   const own = { ...baseSettings, own_dark: "1", color_primary_dark: "#ABCDEF", color_secondary_dark: "#fedcba" };
   await postMultipart(app, "/admin/settings", own, cookie);

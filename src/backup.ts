@@ -17,10 +17,10 @@ export const BACKUP_FORMAT = "konferenzkompass-sicherung";
 /** Appearance settings; internal counters and flags (version, example_seeded, perm_*) stay out. */
 const SETTING_KEYS = [
   "site_title", "org_name", "copyright", "logo", "favicon", "color_primary", "color_secondary", "color_primary_dark", "color_secondary_dark",
-  "hero_image", "hero_position",
+  "hero_image", "hero_position", "app_icon",
   "show_intro", "show_schedule", "show_next", "show_contact",
 ] as const;
-const IMAGE_KEYS = ["logo", "favicon", "hero_image"];
+const IMAGE_KEYS = ["logo", "favicon", "hero_image", "app_icon"];
 
 export type ItemJson = {
   date: string; start: string; end: string; title: string; top_number: string; kind: "agenda" | "break"; location: string;

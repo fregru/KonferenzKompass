@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { raw } from "hono/html";
+import { assetUrl } from "../assets";
 import { activeEvent, getItem, itemsForEvent, type ItemRow, type Page } from "../db";
 import { renderMarkdown } from "../markdown";
 import { itemLabel } from "./labels";
@@ -194,7 +195,7 @@ export function MapPage({ db, page, roomId, floorId, fromItem, nowMs }: {
           Kein Raum gefunden.
         </p>
       </section>
-      <script src="/static/map.js" defer></script>
+      <script src={assetUrl("map.js")} defer></script>
     </article>
   );
 }

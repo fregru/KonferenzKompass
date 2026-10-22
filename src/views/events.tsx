@@ -1,4 +1,5 @@
 import type { Database } from "bun:sqlite";
+import { assetUrl } from "../assets";
 import type { User } from "../auth";
 import { subItemsFor, type Event, type ItemRow } from "../db";
 import { CSV_COLUMNS, type ImportRow } from "../csv";
@@ -168,7 +169,7 @@ export function ItemsPage({ db, user, event, items }: { db: Database; user: User
           </section>
         );
       })}
-      {!readonly && <script src="/static/vendor/sortable.js" defer></script>}
+      {!readonly && <script src={assetUrl("vendor/sortable.js")} defer></script>}
     </AdminPage>
   );
 }
