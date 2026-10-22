@@ -382,6 +382,29 @@ export function ContentPage({ db, page }: { db: Database; page: Page }) {
   );
 }
 
+/** "Als App installieren" on the start page; site.js shows it only where the browser can install (or on iOS). */
+export function InstallHint() {
+  return (
+    <section class="card installhint" hidden>
+      <p>
+        <strong>Als App installieren</strong> – mit eigenem Symbol auf dem Startbildschirm und auch ohne Netz nutzbar.
+        <span class="ios" hidden>
+          {" "}
+          Dazu in Safari auf <Icon name="share" /> <em>Teilen</em> tippen, dann <em>Zum Home-Bildschirm</em>.
+        </span>
+      </p>
+      <div class="actions">
+        <button type="button" data-install hidden>
+          Installieren
+        </button>
+        <button type="button" class="secondary" data-dismiss>
+          Nicht jetzt
+        </button>
+      </div>
+    </section>
+  );
+}
+
 /** Desktop sidebar shortcut list to the content pages (hidden on phones, where the menu covers it). */
 export function QuickLinks({ db }: { db: Database }) {
   const pages = menuPages(db);

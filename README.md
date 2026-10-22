@@ -61,6 +61,7 @@ Beim ersten Start wird aus `ADMIN_USER` und `ADMIN_PASSWORD` (mind. 12 Zeichen) 
 | `ADMIN_USER`, `ADMIN_PASSWORD` | erster Admin (nur beim ersten Start) |
 | `PORT` | Port, Standard `3000` |
 | `TRUST_PROXY` | `1` hinter einem Reverse-Proxy, damit die Sperre nach Fehlversuchen pro Besucher-IP greift. Ohne Proxy weglassen. |
+| `SERVICE_WORKER` | `off` schaltet die Offline-Funktion ab: Geräte löschen beim nächsten Besuch die gespeicherten Seiten und den Service Worker. Notbremse, falls eine fehlerhafte Version ausgeliefert wurde; danach Variable wieder entfernen. |
 
 Die App spricht nur HTTP; für HTTPS gehört ein Reverse-Proxy davor (z. B. Caddy oder nginx). Die Docker-Variante ist deshalb nur über `127.0.0.1:3000` erreichbar.
 
@@ -73,7 +74,8 @@ Der Container läuft ohne Root-Rechte als Benutzer `bun` (UID 1000); der Ordner 
 ## Gut zu wissen
 
 - **Feste und fließende Einträge:** Einträge mit fester Uhrzeit (z. B. Mittagessen) behalten ihren Beginn, alle anderen schließen direkt an den vorherigen an. Überschneidungen zeigt der Zeitplan rot an.
-- **Als App installieren:** Auf Android im Browser-Menü *App installieren*, auf dem iPhone *Teilen → Zum Home-Bildschirm*. Das Symbol kommt aus *Einstellungen → App-Icon* (sonst das Favicon, ohne Favicon der erste Buchstabe des Seitentitels). Ohne Netz zeigt die App die zuletzt geöffneten Seiten mit „Offline · Stand hh:mm“; der Admin-Bereich wird nie zwischengespeichert. Safari löscht den Zwischenspeicher nach etwa 7 Tagen ohne Nutzung. Installieren geht nur über HTTPS (oder `localhost`).
+- **Als App installieren:** Die Startseite bietet es an, wo der Browser es kann: in Chrome und Edge (auch auf Android) mit Knopf, auf dem iPhone mit Hinweis auf *Teilen → Zum Home-Bildschirm*. Firefox kann Seiten am Rechner nicht als App installieren, die Offline-Funktion gibt es dort trotzdem (nicht in privaten Fenstern). Das Symbol kommt aus *Einstellungen → App-Icon* (sonst das Favicon, ohne Favicon der erste Buchstabe des Seitentitels). Installieren geht nur über HTTPS (oder `localhost`).
+- **Ohne Netz:** Schon beim ersten Besuch speichert der Browser alle öffentlichen Seiten samt Bildern und Grundrissen. Ohne Netz – oder wenn das WLAN nach 3 Sekunden noch nicht antwortet – erscheint die gespeicherte Seite mit „Offline – Stand hh:mm“ unter dem Kopf; die „Jetzt“-Karte zeigt ihr Alter statt eines Timers. Der Admin-Bereich wird nie gespeichert. Safari löscht den Speicher nach etwa 7 Tagen ohne Nutzung.
 - **Tageswechsel:** Ein Veranstaltungstag dauert bis 04:00 Uhr, damit z. B. die Party über Mitternacht weiterläuft.
 - **CSV-Import:** Am einfachsten erst exportieren und die Datei als Vorlage nutzen (Excel mit `;` funktioniert). Vor dem Import zeigt eine Vorschau alle Fehler. Der Import ersetzt den ganzen Zeitplan.
 - **Lageplan weitergeben:** Ein Ort lässt sich samt Grundrissen als JSON exportieren und in einer anderen Installation importieren.
@@ -85,6 +87,7 @@ Der Container läuft ohne Root-Rechte als Benutzer `bun` (UID 1000); der Ordner 
 bun install
 bun run dev    # Neustart bei Änderungen
 bun test
+bun run e2e    # Offline-App im Browser (Chromium und Firefox); einmalig vorher: npx playwright install chromium firefox
 ```
 
 Technik: [Bun](https://bun.sh), [Hono](https://hono.dev) mit serverseitigem JSX, SQLite, wenig JavaScript im Browser.

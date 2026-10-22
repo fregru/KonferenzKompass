@@ -2,9 +2,38 @@ import type { Database } from "bun:sqlite";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Hono } from "hono";
-import { assetUrl, assetsVersion, OFFLINE_ASSETS } from "./assets";
-import { getSettings } from "./db";
+import { assetUrl, assetsVersion, OFFLINE_ASSETS, serviceWorkerOff } from "./assets";
+import { activeEvent, contactsFor, getPages, getSettings } from "./db";
+import { floorsOf, mapPage, publicVenue } from "./rooms";
 import { uploadDataUri, uploadDir } from "./uploads";
+import { menuPages } from "./views/layout";
+
+/** Served instead of the real worker with SERVICE_WORKER=off (see serviceWorkerOff). */
+const KILL_WORKER = `// SERVICE_WORKER=off: remove the stored copies and this worker
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", (e) => e.waitUntil((async () => {
+  for (const key of await caches.keys()) await caches.delete(key);
+  await self.registration.unregister();
+})()));
+`;
+
+/** Everything a visitor can reach from the menu, stored on install so the whole site works offline after one visit. */
+export function offlineContent(db: Database): { pages: string[]; uploads: string[] } {
+  const s = getSettings(db);
+  const pages = ["/", ...menuPages(db).filter((p) => !p.external).map((p) => p.href)];
+  for (const p of getPages(db)) if (p.kind === "legal") pages.push(`/p/${p.slug}`);
+  const uploads = [s.logo, s.favicon, s.hero_image, s.app_icon];
+  const map = mapPage(db);
+  const venue = publicVenue(db);
+  if (map && venue)
+    for (const f of floorsOf(db, venue.id)) {
+      pages.push(`${map}?etage=${f.id}`); // the floor tabs
+      uploads.push(f.image);
+    }
+  const event = activeEvent(db);
+  if (event && s.show_contact === "1") for (const c of contactsFor(db, event.id)) uploads.push(c.photo);
+  return { pages: [...new Set(pages)], uploads: [...new Set(uploads.filter((u): u is string => !!u).map((u) => `/uploads/${u}`))] };
+}
 
 /** Width and height of a PNG from its header, or null if it is no PNG. */
 export function pngSize(bytes: Uint8Array): { width: number; height: number } | null {
@@ -69,13 +98,15 @@ export function pwaRoutes(db: Database) {
   });
 
   r.get("/sw.js", (c) => {
-    const assets = ["/", ...OFFLINE_ASSETS.map(assetUrl)];
-    const code = readFileSync("public/sw.js", "utf8")
-      .replace('"__VERSION__"', JSON.stringify(assetsVersion()))
-      .replace("[/* __ASSETS__ */]", JSON.stringify(assets));
     c.header("Content-Type", "text/javascript; charset=utf-8");
     c.header("Cache-Control", "no-cache");
-    return c.body(code);
+    if (serviceWorkerOff()) return c.body(KILL_WORKER);
+    const { pages, uploads } = offlineContent(db);
+    const assets = OFFLINE_ASSETS.map(assetUrl);
+    // a new page or image changes the version, so browsers install the worker again and store it
+    const version = Bun.hash(assetsVersion() + JSON.stringify([pages, uploads])).toString(36).slice(0, 8);
+    const config = JSON.stringify({ VERSION: version, ASSETS: assets, PAGES: pages, UPLOADS: uploads });
+    return c.body(readFileSync("public/sw.js", "utf8").replace("{/* __CONFIG__ */}", config));
   });
 
   return r;

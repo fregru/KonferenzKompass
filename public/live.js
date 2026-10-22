@@ -8,7 +8,8 @@
     if (busy || document.hidden) return;
     busy = true;
     try {
-      const res = await fetch("/api/live", { headers: etag ? { "If-None-Match": etag } : {}, cache: "no-store" });
+      // a hanging request (Wi-Fi without internet) counts as offline too
+      const res = await fetch("/api/live", { headers: etag ? { "If-None-Match": etag } : {}, cache: "no-store", signal: AbortSignal.timeout(5000) });
       if (res.status === 200) {
         const open = [...el.querySelectorAll("details")].map((d) => d.open);
         el.innerHTML = await res.text();

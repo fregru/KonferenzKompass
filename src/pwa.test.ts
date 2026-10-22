@@ -4,7 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Hono } from "hono";
 import { getSetting, setSetting } from "./db";
-import { pngSize } from "./pwa";
+import { seedExample } from "./example";
+import { offlineContent, pngSize } from "./pwa";
 import { loginAs, testApp } from "./test-helpers";
 
 beforeAll(() => {
@@ -73,9 +74,44 @@ test("service worker: root scope, no-cache, version and offline assets filled in
   expect(res.headers.get("content-type")).toContain("javascript");
   expect(res.headers.get("cache-control")).toBe("no-cache");
   const code = await res.text();
-  expect(code).not.toContain("__VERSION__");
-  expect(code).not.toContain("__ASSETS__");
-  expect(code).toMatch(/const ASSETS = \["\/","\/static\/style\.css\?v=\w+"/);
+  expect(code).not.toContain("__CONFIG__");
+  const config = JSON.parse(code.match(/const CONFIG = (\{.*\});/)![1]!);
+  expect(config.VERSION).toMatch(/^\w+$/);
+  expect(config.ASSETS[0]).toMatch(/^\/static\/style\.css\?v=\w+$/);
+  expect(config.PAGES).toContain("/");
+});
+
+test("offline content: every menu page, legal pages, floor tabs and the images they show", async () => {
+  const { app, db } = testApp();
+  await seedExample(db);
+  setSetting(db, "hero_image", "11111111-1111-1111-1111-111111111111.jpg");
+  const { pages, uploads } = offlineContent(db);
+  for (const p of ["/", "/p/hilfe", "/p/lageplan", "/p/impressum", "/p/datenschutz"]) expect(pages).toContain(p);
+  expect(pages.some((p) => /^\/p\/lageplan\?etage=\d+$/.test(p))).toBe(true);
+  expect(pages.some((p) => p.startsWith("http"))).toBe(false); // direct external links are no pages of ours
+  expect(uploads).toContain("/uploads/11111111-1111-1111-1111-111111111111.jpg");
+  expect(uploads.length).toBeGreaterThan(1); // floor plans of the example venue
+
+  // a new page changes the worker, so browsers install it again and store the page
+  const before = await (await app.request("/sw.js")).text();
+  db.run("UPDATE pages SET enabled = 0 WHERE slug = 'hilfe'");
+  const after = await (await app.request("/sw.js")).text();
+  expect(after).not.toBe(before);
+  expect(offlineContent(db).pages).not.toContain("/p/hilfe");
+});
+
+test("SERVICE_WORKER=off serves a worker that removes itself and tells pages not to register", async () => {
+  const { app } = testApp();
+  process.env.SERVICE_WORKER = "off";
+  try {
+    const code = await (await app.request("/sw.js")).text();
+    expect(code).toContain("registration.unregister()");
+    expect(code).not.toContain("CONFIG");
+    expect(await (await app.request("/")).text()).toContain('data-sw="off"');
+  } finally {
+    delete process.env.SERVICE_WORKER;
+  }
+  expect(await (await app.request("/")).text()).not.toContain("data-sw");
 });
 
 test("static files: versioned URLs are cached for a year, plain ones revalidated", async () => {
@@ -116,4 +152,11 @@ test("without App-Icon the tab icon is the app icon: embedded in the square SVG,
   expect(svg).toContain('<image href="data:image/png;base64,');
   expect(svg).not.toContain("<text");
   expect(await (await app.request("/")).text()).toContain(`<link rel="apple-touch-icon" href="/uploads/${favicon}"/>`);
+});
+
+test("start page has the install hint, hidden until site.js knows the browser can install", async () => {
+  const { app } = testApp();
+  const html = await (await app.request("/")).text();
+  expect(html).toContain('<section class="card installhint" hidden="">');
+  expect(await (await app.request("/p/hilfe")).text()).not.toContain("installhint");
 });

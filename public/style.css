@@ -36,6 +36,7 @@
   }
 }
 *, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; } /* also on elements styled with display: flex/grid (buttons, cards) */
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-top: 6rem; }
 body {
   margin: 0; font: 1rem/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--fg);
@@ -91,13 +92,20 @@ header { position: sticky; top: 0; z-index: 20; background: var(--card); border-
 .menu-list a { display: flex; align-items: center; min-height: 3rem; padding: 0 .75rem; border-radius: 6px; color: var(--fg); text-decoration: none; font-size: 1.05rem; }
 .menu-list a[aria-current] { background: var(--tint); color: var(--primary); font-weight: 600; }
 
-/* offline notice (site.js), part of the sticky header; "back" = briefly after the network returned */
+/* offline notice (site.js), part of the sticky header; "ok" = good news (back online, stored for offline use) */
 .offlinebar { border-top: 1px solid var(--line); background: color-mix(in srgb, var(--warn) 12%, var(--card)); }
 .offlinebar p { max-width: var(--width); margin: 0 auto; padding: .55rem var(--pad-x); font-size: .9rem; font-weight: 600; color: var(--warn); }
 .offlinebar p::before { content: "⚠\FE0E  "; }
-.offlinebar.back { background: var(--tint); }
-.offlinebar.back p { color: var(--primary); }
-.offlinebar.back p::before { content: none; }
+.offlinebar.ok { background: var(--tint); }
+.offlinebar.ok p { color: var(--primary); }
+.offlinebar.ok p::before { content: none; }
+/* the one-time "stored for offline use" note: over the page under the header, so nothing below moves */
+.offlinebar.float { position: absolute; top: 100%; left: 0; right: 0; border-bottom: 1px solid var(--line); box-shadow: 0 8px 16px var(--shadow); }
+
+/* "Als App installieren" (site.js shows it where the browser can install) */
+.installhint { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; padding: .75rem 1rem; }
+.installhint p { margin: 0; flex: 1 1 16rem; min-width: 0; }
+.installhint .actions { margin: 0; }
 
 /* wide screens: inline tabs instead of the menu button */
 .tabs { display: none; }
@@ -125,7 +133,6 @@ footer .bar { display: flex; flex-wrap: wrap; justify-content: space-between; ga
 footer a { display: inline-block; padding: .4rem 0; color: inherit; margin-right: 1.25rem; }
 /* darkmode switch: three segments (Hell / Automatisch / Dunkel) over radios; hidden until theme.js wires it up */
 .themeswitch { display: inline-flex; align-self: center; margin: 0; padding: 2px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); }
-.themeswitch[hidden] { display: none; }
 .themeswitch legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .themeswitch label { position: relative; display: inline-flex; align-items: center; gap: .3rem; margin: 0; min-height: 2.25rem; padding: 0 .8rem; border-radius: 999px; color: var(--muted); font-size: .85rem; cursor: pointer; }
 .themeswitch input { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }

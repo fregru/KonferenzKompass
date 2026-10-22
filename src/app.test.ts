@@ -1,4 +1,4 @@
-import { test, expect } from "bun:test";
+import { test, expect, spyOn } from "bun:test";
 import { setSetting } from "./db";
 import { testApp } from "./test-helpers";
 
@@ -41,7 +41,14 @@ test("health check answers without login and reports a broken database", async (
   expect(await ok.text()).toBe("ok");
   expect(ok.headers.get("cache-control")).toBe("no-store");
   db.close();
-  const broken = await app.request("/health");
-  expect(broken.status).toBe(503);
-  expect(await broken.text()).toBe("fehler");
+  // the failure is logged on purpose; keep it out of the test output, but make sure it is logged
+  const log = spyOn(console, "error").mockImplementation(() => {});
+  try {
+    const broken = await app.request("/health");
+    expect(broken.status).toBe(503);
+    expect(await broken.text()).toBe("fehler");
+    expect(log.mock.calls[0]?.[0]).toBe("Health-Check fehlgeschlagen:");
+  } finally {
+    log.mockRestore();
+  }
 });

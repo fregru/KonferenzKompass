@@ -33,5 +33,11 @@ function hashOf(name: string): string {
 /** `/static/<name>?v=<hash>`: the version lets browsers keep the file for a year (see the static route). */
 export const assetUrl = (name: string) => `/static/${name}?v=${hashOf(name)}`;
 
+/**
+ * Emergency switch: SERVICE_WORKER=off serves a worker that deletes its caches and unregisters itself, and pages
+ * stop registering one (site.js reads html[data-sw]). For when a broken worker was deployed.
+ */
+export const serviceWorkerOff = () => process.env.SERVICE_WORKER === "off";
+
 /** Changes whenever any static file changes; names the service worker's cache. */
 export const assetsVersion = () => Bun.hash(Object.keys(FILES).map(hashOf).join()).toString(36).slice(0, 8);

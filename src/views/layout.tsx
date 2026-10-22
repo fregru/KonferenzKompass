@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import type { Child } from "hono/jsx";
 import { raw } from "hono/html";
-import { assetUrl } from "../assets";
+import { assetUrl, serviceWorkerOff } from "../assets";
 import type { User } from "../auth";
 import { darkColor } from "../color";
 import { activeEvent, getPages, getSettings, linksFor, type Page, type PageLink } from "../db";
@@ -62,7 +62,7 @@ export function Layout({ db, title, active, hero, user, children }: { db: Databa
     <>
       {raw("<!doctype html>")}
       {/* data-stand: when this page was built; a copy from the service worker's cache shows its real age offline */}
-      <html lang="de" data-stand={String(Date.now())}>
+      <html lang="de" data-stand={String(Date.now())} data-sw={serviceWorkerOff() ? "off" : undefined}>
         <head>
           <meta charset="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />

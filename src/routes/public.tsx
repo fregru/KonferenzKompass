@@ -6,7 +6,7 @@ import { sessionUser } from "../auth";
 import { Layout } from "../views/layout";
 import { getPage } from "../db";
 import { MapPage } from "../views/map";
-import { ContentPage, Contacts, Faq, Hero, LiveSection, liveEtag, QuickLinks } from "../views/public";
+import { ContentPage, Contacts, Faq, Hero, InstallHint, LiveSection, liveEtag, QuickLinks } from "../views/public";
 
 export function publicRoutes(db: Database, clock: () => number) {
   const r = new Hono();
@@ -17,6 +17,7 @@ export function publicRoutes(db: Database, clock: () => number) {
       <Layout db={db} active="start" hero={<Hero db={db} />} user={sessionUser(db, getCookie(c, "sid"))}>
         <div class="layout">
           <div class="maincol">
+            <InstallHint />
             <div id="live" data-etag={liveEtag(db, nowMs)}>
               <LiveSection db={db} nowMs={nowMs} />
             </div>
